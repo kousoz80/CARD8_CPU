@@ -1,0 +1,2 @@
+#!/bin/sh
+java -jar jar/card8vm_asm.jar -list asm.s a.out
