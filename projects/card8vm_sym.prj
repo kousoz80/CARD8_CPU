@@ -285,9 +285,12 @@ memory_windows.add( new memory_window( n, s, e ) );
 public void exec_one_cycle(){
   int ins, adr, tmp;
 
-    // クロック、プログラムカウンタの設定
+    // 各レジスタ、クロックカウンタの設定
     reg_pc = Integer.parseInt( pc_reg.getText(), 16 );
-    clock = Integer.parseInt( clock_field.getText() );
+    reg_x =  Integer.parseInt( x_reg.getText(), 16 );
+    reg_y =  Integer.parseInt( y_reg.getText(), 16 );
+    reg_a =  Integer.parseInt( a_reg.getText(), 16 );
+    clock =  Integer.parseInt( clock_field.getText() );
 
     // 命令コードをフェッチ
     ins = mem[ reg_pc++ ];
