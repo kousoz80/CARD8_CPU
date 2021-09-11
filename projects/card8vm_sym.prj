@@ -285,6 +285,10 @@ memory_windows.add( new memory_window( n, s, e ) );
 public void exec_one_cycle(){
   int ins, adr, tmp;
 
+    // クロック、プログラムカウンタの設定
+    reg_pc = Integer.parseInt( pc_reg.getText(), 16 );
+    clock = Integer.parseInt( clock_field.getText() );
+
     // 命令コードをフェッチ
     ins = mem[ reg_pc++ ];
 
@@ -557,6 +561,21 @@ public void exec_one_cycle(){
 
     // I/O同期
     io_sync();
+
+    // レジスタ表示処理
+    pc_reg.setText(hex6(reg_pc));
+    x_reg.setText(hex6(reg_x));
+    y_reg.setText(hex6(reg_y));
+    a_reg.setText(hex2(reg_a));
+
+    // フラグ表示処理
+    if( reg_cf != 0 ) cf_reg.setBackground(Color.green); else  cf_reg.setBackground(Color.lightGray);
+    if( reg_zf != 0 ) zf_reg.setBackground(Color.green); else  zf_reg.setBackground(Color.lightGray);
+
+    // クロック表示処理
+    clock++;
+    clock_field.setText(&quot;&quot;+clock);
+
 }
 </codetext>
 </codeclip>
@@ -699,8 +718,8 @@ static final int JC=19;	// jc xxxx;	CFが１のときxxxx番地にジャンプ�
 static final int JNC=20;	// jnc xxxx;	CFが0のときxxxx番地にジャンプする
 
 // ここから拡張命令(可能ならば実装する)
-static final int CALLX=21;	// callx;	Xレジスタが示す番地の内容とPCレジスタの内容を入れ替える
-static final int CALLY=22;	// cally;	Yレジスタが示す番地の内容とPCレジスタの内容を入れ替える
+static final int CALLX=21;// callx;	Xレジスタが示す番地の内容とPCレジスタの内容を入れ替える
+static final int CALLY=22;// cally;	Yレジスタが示す番地の内容とPCレジスタの内容を入れ替える
 static final int LYI=23;	// lyi xxxx;	Yレジスタにxxxxの値をセットする
 static final int LDY=24;	// ldy xxxx;	Yレジスタにxxxx番地の内容を転送する
 static final int ADY=25;	// ady xxxx;	Yレジスタにxxxx番地の内容を加算する
@@ -709,7 +728,7 @@ static final int STY=27;	// sty xxxx;	Yレジスタの内容をxxxx番地に転�
 static final int LD_Y=28;	// ld_y;	AレジスタにYレジスタが示す番地の内容を転送する
 static final int ST_Y=29;	// st_y;	Yレジスタが示す番地にAレジスタの内容を転送する
 static final int ADC_Y=30;// adc_y;	AレジスタにYレジスタが示す番地の内容をキャリー付き加算する
-static final int SBC_Y=31;	// sbc_y;	AレジスタからYレジスタが示す番地の内容をキャリー付き減算する
+static final int SBC_Y=31;// sbc_y;	AレジスタからYレジスタが示す番地の内容をキャリー付き減算する
 static final int AND_Y=32;// and_y;	AレジスタにYレジスタが示す番地の内容をAND演算する(CFは0にする)
 static final int OR_Y=33;	// or_y;	AレジスタにYレジスタが示す番地の内容をOR演算する(CFは1にする)
 
