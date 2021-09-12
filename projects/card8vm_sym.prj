@@ -303,16 +303,6 @@ public void exec_one_cycle(){
       is_break = 1;
       break;
 
-    // call xxxx;	xxxx番地の内容とPCレジスタの内容を入れ替える
-    case CALL:
-      adr = mem[ reg_pc++ ] | (mem[ reg_pc++ ] &lt;&lt; 8) | (mem[ reg_pc++ ] &lt;&lt; 16);
-      tmp = mem[ adr++ ] | (mem[ adr++ ] &lt;&lt; 8) | (mem[ adr ] &lt;&lt; 16);
-      mem[ adr-- ] = (reg_pc&gt;&gt;16) &amp; 0xff;
-      mem[ adr-- ] = (reg_pc&gt;&gt;8)  &amp; 0xff;
-      mem[ adr ] = reg_pc &amp; 0xff;
-      reg_pc = tmp;
-      break;
-
     // lxi xxxx;	Xレジスタにxxxxの値をセットする
     case LXI:
       reg_x = mem[ reg_pc++ ] | (mem[ reg_pc++ ] &lt;&lt; 8) | (mem[ reg_pc++ ] &lt;&lt; 16);
@@ -447,26 +437,16 @@ public void exec_one_cycle(){
       if( reg_cf == 0 ) reg_pc = tmp;
       break;
 
-    // ここから拡張命令
-
-    // callx;		Xレジスタが示す番地の内容とPCレジスタの内容を入れ替える
-    case CALLX:
-      adr = reg_x;
-      tmp = mem[ adr++ ] | (mem[ adr++ ] &lt;&lt; 8) | (mem[ adr ] &lt;&lt; 16);
-      mem[ adr-- ] = (reg_pc&gt;&gt;16) &amp; 0xff;
-      mem[ adr-- ] = (reg_pc&gt;&gt;8)  &amp; 0xff;
-      mem[ adr ] = reg_pc &amp; 0xff;
-      reg_pc = tmp;
+    // jmpx;		Xレジスタが示す番地にジャンプする
+    case  JMPX:
+      reg_pc = reg_x;
       break;
 
-    // cally;		Yレジスタが示す番地の内容とPCレジスタの内容を入れ替える
-    case CALLY:
-      adr = reg_y;
-      tmp = mem[ adr++ ] | (mem[ adr++ ] &lt;&lt; 8) | (mem[ adr ] &lt;&lt; 16);
-      mem[ adr-- ] = (reg_pc&gt;&gt;16) &amp; 0xff;
-      mem[ adr-- ] = (reg_pc&gt;&gt;8)  &amp; 0xff;
-      mem[ adr ] = reg_pc &amp; 0xff;
-      reg_pc = tmp;
+    // ここから拡張命令
+
+    // jmpy;		Yレジスタが示す番地にジャンプする
+    case  JMPY:
+      reg_pc = reg_y;
       break;
 
     // lyi xxxx;	Yレジスタにxxxxの値をセットする
@@ -695,46 +675,44 @@ if( run_mode != 0 ){
 <ID>_C32</ID>
 <x0>411</x0>
 <y0>1</y0>
-<width>573</width>
-<height>573</height>
+<width>588</width>
+<height>550</height>
 <codetext>// 仮想マシンの命令セット
 static final int HLT=0;	// hlt;	停止する
-static final int CALL=1;	// call xxxx;	xxxx番地の内容とPCレジスタの内容を入れ替える
-static final int LXI=2;	// lxi xxxx;	Xレジスタにxxxxの値をセットする
-static final int LDX=3;	// ldx xxxx;	Xレジスタにxxxx番地の内容を転送する
-static final int ADX=4;	// adx xxxx;	Xレジスタにxxxx番地の内容を加算する
-static final int SBX=5;	// sbx xxxx;	Xレジスタからxxxx番地の内容を減算する
-static final int STX=6;	// stx xxxx;	Xレジスタの内容をxxxx番地に転送する
-static final int LAI=7;	// lai xx;	Aレジスタにxxの値をセットする
-static final int LD=8;	// ld;	AレジスタにXレジスタが示す番地の内容を転送する
-static final int ST=9;	// st;	Xレジスタが示す番地にAレジスタの内容を転送する
-static final int ADC=10;	// adc;	AレジスタにXレジスタが示す番地の内容をキャリー付き加算する
-static final int SBC=11;	// sbc;	AレジスタからXレジスタが示す番地の内容をキャリー付き減算する
-static final int AND=12;	// and;	AレジスタにXレジスタが示す番地の内容をAND演算する(CFは0にする)
-static final int OR=13;	// or;	AレジスタにXレジスタが示す番地の内容をOR演算する(CFは1にする)
-static final int ROR=14;	// ror;	AレジスタのビットをCFを含めて右回転させる
-static final int ROL=15;	// rol;	AレジスタのビットをCFを含めて左回転させる
-static final int JMP=16;	// jmp xxxx;	xxxx番地にジャンプする
-static final int JZ=17;	// jz xxxx;	ZFが１のときxxxx番地にジャンプする
-static final int JNZ=18;	// jnz xxxx;	ZFが0のときxxxx番地にジャンプする
-static final int JC=19;	// jc xxxx;	CFが１のときxxxx番地にジャンプする
-static final int JNC=20;	// jnc xxxx;	CFが0のときxxxx番地にジャンプする
+static final int LXI=1;	// lxi xxxx;	Xレジスタにxxxxの値をセットする
+static final int LDX=2;	// ldx xxxx;	Xレジスタにxxxx番地の内容を転送する
+static final int ADX=3;	// adx xxxx;	Xレジスタにxxxx番地の内容を加算する
+static final int SBX=4;	// sbx xxxx;	Xレジスタからxxxx番地の内容を減算する
+static final int STX=5;	// stx xxxx;	Xレジスタの内容をxxxx番地に転送する
+static final int LAI=6;	// lai xx;	Aレジスタにxxの値をセットする
+static final int LD=7;	// ld;	AレジスタにXレジスタが示す番地の内容を転送する
+static final int ST=8;	// st;	Xレジスタが示す番地にAレジスタの内容を転送する
+static final int ADC=9;	// adc;	AレジスタにXレジスタが示す番地の内容をキャリー付き加算する
+static final int SBC=10;	// sbc;	AレジスタからXレジスタが示す番地の内容をキャリー付き減算する
+static final int AND=11;	// and;	AレジスタにXレジスタが示す番地の内容をAND演算する(CFは0にする)
+static final int OR=12;	// or;	AレジスタにXレジスタが示す番地の内容をOR演算する(CFは1にする)
+static final int ROR=13;	// ror;	AレジスタのビットをCFを含めて右回転させる
+static final int ROL=14;	// rol;	AレジスタのビットをCFを含めて左回転させる
+static final int JMP=15;	// jmp xxxx;	xxxx番地にジャンプする
+static final int JZ=16;	// jz xxxx;	ZFが１のときxxxx番地にジャンプする
+static final int JNZ=17;	// jnz xxxx;	ZFが0のときxxxx番地にジャンプする
+static final int JC=18;	// jc xxxx;	CFが１のときxxxx番地にジャンプする
+static final int JNC=19;	// jnc xxxx;	CFが0のときxxxx番地にジャンプする
+static final int JMPX=20;	// jmpx;	Xレジスタが示す番地にジャンプする
 
 // ここから拡張命令(可能ならば実装する)
-static final int CALLX=21;// callx;	Xレジスタが示す番地の内容とPCレジスタの内容を入れ替える
-static final int CALLY=22;// cally;	Yレジスタが示す番地の内容とPCレジスタの内容を入れ替える
-static final int LYI=23;	// lyi xxxx;	Yレジスタにxxxxの値をセットする
-static final int LDY=24;	// ldy xxxx;	Yレジスタにxxxx番地の内容を転送する
-static final int ADY=25;	// ady xxxx;	Yレジスタにxxxx番地の内容を加算する
-static final int SBY=26;	// sby xxxx;	Yレジスタからxxxx番地の内容を減算する
-static final int STY=27;	// sty xxxx;	Yレジスタの内容をxxxx番地に転送する
-static final int LD_Y=28;	// ld_y;	AレジスタにYレジスタが示す番地の内容を転送する
-static final int ST_Y=29;	// st_y;	Yレジスタが示す番地にAレジスタの内容を転送する
-static final int ADC_Y=30;// adc_y;	AレジスタにYレジスタが示す番地の内容をキャリー付き加算する
-static final int SBC_Y=31;// sbc_y;	AレジスタからYレジスタが示す番地の内容をキャリー付き減算する
-static final int AND_Y=32;// and_y;	AレジスタにYレジスタが示す番地の内容をAND演算する(CFは0にする)
-static final int OR_Y=33;	// or_y;	AレジスタにYレジスタが示す番地の内容をOR演算する(CFは1にする)
-
+static final int JMPY=21;	// jmpy;	Yレジスタが示す番地にジャンプする
+static final int LYI=22;	// lyi xxxx;	Yレジスタにxxxxの値をセットする
+static final int LDY=23;	// ldy xxxx;	Yレジスタにxxxx番地の内容を転送する
+static final int ADY=24;	// ady xxxx;	Yレジスタにxxxx番地の内容を加算する
+static final int SBY=25;	// sby xxxx;	Yレジスタからxxxx番地の内容を減算する
+static final int STY=26;	// sty xxxx;	Yレジスタの内容をxxxx番地に転送する
+static final int LD_Y=27;	// ld_y;	AレジスタにYレジスタが示す番地の内容を転送する
+static final int ST_Y=28;	// st_y;	Yレジスタが示す番地にAレジスタの内容を転送する
+static final int ADC_Y=29;// adc_y;	AレジスタにYレジスタが示す番地の内容をキャリー付き加算する
+static final int SBC_Y=30;// sbc_y;	AレジスタからYレジスタが示す番地の内容をキャリー付き減算する
+static final int AND_Y=31;// and_y;	AレジスタにYレジスタが示す番地の内容をAND演算する(CFは0にする)
+static final int OR_Y=32;	// or_y;	AレジスタにYレジスタが示す番地の内容をOR演算する(CFは1にする)
 </codetext>
 </codeclip>
 </xobject>

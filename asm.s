@@ -26,7 +26,6 @@ end:
 // variable
 p:    int 0
 i:    int 0
-c:    byte 0
 _001: int 1
 
 // string

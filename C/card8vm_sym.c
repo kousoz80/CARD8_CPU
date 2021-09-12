@@ -17,7 +17,6 @@ int mem[MEM_SIZE];
 // 仮想マシンの命令セット
 enum card8vm_ins {
  HLT,	// hlt;			停止する
- CALL,	// call xxxx;	xxxx番地の内容とPCレジスタの内容を入れ替える
  LXI,	// lxi xxxx;	Xレジスタにxxxxの値をセットする
  LDX,	// ldx xxxx;	Xレジスタにxxxx番地の内容を転送する
  ADX,	// adx xxxx;	Xレジスタにxxxx番地の内容を加算する
@@ -37,10 +36,10 @@ enum card8vm_ins {
  JNZ,	// jnz xxxx;	ZFが0のときxxxx番地にジャンプする
  JC,	// jc xxxx;		CFが１のときxxxx番地にジャンプする
  JNC,	// jnc xxxx;	CFが0のときxxxx番地にジャンプする
+ JMPX,	// jmpx;		Xレジスタが示す番地にジャンプする
 
 // ここから拡張命令(可能ならば実装する)
- CALLX,	// callx;		Xレジスタが示す番地の内容とPCレジスタの内容を入れ替える
- CALLY,	// cally;		Yレジスタが示す番地の内容とPCレジスタの内容を入れ替える
+ JMPY,	// jmpy;		Yレジスタが示す番地にジャンプする
  LYI,	// lyi xxxx;	Yレジスタにxxxxの値をセットする
  LDY,	// ldy xxxx;	Yレジスタにxxxx番地の内容を転送する
  ADY,	// ady xxxx;	Yレジスタにxxxx番地の内容を加算する
@@ -61,7 +60,7 @@ int load_prog( char* fname ){
   FILE* fp;
   int adrs, data;
 
-  // 設定ファイルがない場合はエラー
+  // ファイルがない場合はエラー
 if( ( fp = fopen( fname, "r" ) ) == NULL ){
     printf("file not found.\n");
     return -1;
@@ -114,16 +113,6 @@ void main( int argc, char** argv ){
 	// hlt;			停止する
     case HLT:
       is_break = 1;
-      break;
-
-    // call xxxx;	xxxx番地の内容とPCレジスタの内容を入れ替える
-    case CALL:
-      adr = mem[ pc++ ] | (mem[ pc++ ] << 8) | (mem[ pc++ ] << 16);
-      tmp = mem[ adr++ ] | (mem[ adr++ ] << 8) | (mem[ adr ] << 16);
-      mem[ adr-- ] = (pc>>16) & 0xff;
-      mem[ adr-- ] = (pc>>8)  & 0xff;
-      mem[ adr ] = pc & 0xff;
-      pc = tmp;
       break;
 
     // lxi xxxx;	Xレジスタにxxxxの値をセットする
@@ -260,26 +249,16 @@ void main( int argc, char** argv ){
       if( cf == 0 ) pc = tmp;
       break;
 
-    // ここから拡張命令
-
-    // callx;		Xレジスタが示す番地の内容とPCレジスタの内容を入れ替える
-    case CALLX:
-      adr = x;
-      tmp = mem[ adr++ ] | (mem[ adr++ ] << 8) | (mem[ adr ] << 16);
-      mem[ adr-- ] = (pc>>16) & 0xff;
-      mem[ adr-- ] = (pc>>8)  & 0xff;
-      mem[ adr ] = pc & 0xff;
-      pc = tmp;
+    // jmpx;		Xレジスタが示す番地にジャンプする
+    case  JMPX:
+      pc = x;
       break;
 
-    // cally;		Yレジスタが示す番地の内容とPCレジスタの内容を入れ替える
-    case CALLY:
-      adr = y;
-      tmp = mem[ adr++ ] | (mem[ adr++ ] << 8) | (mem[ adr ] << 16);
-      mem[ adr-- ] = (pc>>16) & 0xff;
-      mem[ adr-- ] = (pc>>8)  & 0xff;
-      mem[ adr ] = pc & 0xff;
-      pc = tmp;
+    // ここから拡張命令
+
+    // jmpy;		Yレジスタが示す番地にジャンプする
+    case  JMPY:
+      pc = y;
       break;
 
     // lyi xxxx;	Yレジスタにxxxxの値をセットする
