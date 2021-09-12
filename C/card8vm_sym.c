@@ -37,8 +37,6 @@ enum card8vm_ins {
  JC,	// jc xxxx;		CFが１のときxxxx番地にジャンプする
  JNC,	// jnc xxxx;	CFが0のときxxxx番地にジャンプする
  JMPX,	// jmpx;		Xレジスタが示す番地にジャンプする
-
-// ここから拡張命令(可能ならば実装する)
  JMPY,	// jmpy;		Yレジスタが示す番地にジャンプする
  LYI,	// lyi xxxx;	Yレジスタにxxxxの値をセットする
  LDY,	// ldy xxxx;	Yレジスタにxxxx番地の内容を転送する

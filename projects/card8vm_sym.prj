@@ -6,7 +6,7 @@
 <y0>0</y0>
 <width>200</width>
 <height>100</height>
-<ID_maker>81</ID_maker>
+<ID_maker>87</ID_maker>
 <objectname>card8vm_sym</objectname>
 <description>新規のアプリケーション</description>
 <codeclip>
@@ -39,13 +39,13 @@
 <y0>233</y0>
 <width>106</width>
 <height>175</height>
-<ID_maker>34</ID_maker>
+<ID_maker>35</ID_maker>
 <objectname>symulator</objectname>
 <description></description>
 <pin>
 <ID>_P0</ID>
-<x0>2</x0>
-<y0>461</y0>
+<x0>0</x0>
+<y0>404</y0>
 <width>73</width>
 <height>27</height>
 <text>run_stop()</text>
@@ -55,7 +55,7 @@
 <pin>
 <ID>_P1</ID>
 <x0>211</x0>
-<y0>284</y0>
+<y0>215</y0>
 <width>85</width>
 <height>28</height>
 <text>single_step()</text>
@@ -96,8 +96,8 @@
 <ID>_O8</ID>
 <state1>_SINIT</state1>
 <state2>_SINIT</state2>
-<x0>27</x0>
-<y0>392</y0>
+<x0>25</x0>
+<y0>340</y0>
 <width>164</width>
 <height>46</height>
 <inconnectx0>0</inconnectx0>
@@ -133,8 +133,8 @@ interval = Integer.parseInt( interval_field.getText() );
 <ID>_O13</ID>
 <state1>_SINIT</state1>
 <state2>_SINIT</state2>
-<x0>32</x0>
-<y0>317</y0>
+<x0>33</x0>
+<y0>254</y0>
 <width>161</width>
 <height>67</height>
 <inconnectx0>0</inconnectx0>
@@ -277,8 +277,8 @@ memory_windows.add( new memory_window( n, s, e ) );
 </relation>
 <codeclip>
 <ID>_C21</ID>
-<x0>171</x0>
-<y0>465</y0>
+<x0>170</x0>
+<y0>402</y0>
 <width>198</width>
 <height>33</height>
 <codetext>// 1サイクル実行
@@ -290,6 +290,7 @@ public void exec_one_cycle(){
     reg_x =  Integer.parseInt( x_reg.getText(), 16 );
     reg_y =  Integer.parseInt( y_reg.getText(), 16 );
     reg_a =  Integer.parseInt( a_reg.getText(), 16 );
+    reg_sp = Integer.parseInt( sp_reg.getText(), 16 );
     clock =  Integer.parseInt( clock_field.getText() );
 
     // 命令コードをフェッチ
@@ -528,6 +529,52 @@ public void exec_one_cycle(){
       reg_cf = 1;
       break;
 
+    // call xxxx;	PCレジスタの内容をスタックにプッシュしてxxxx番地にジャンプする
+    case CALL:
+      tmp = mem[ reg_pc++] | (mem[ reg_pc++ ] &lt;&lt; 8) | (mem[reg_pc++] &lt;&lt; 16);
+      mem[ --reg_sp ] = (reg_pc&gt;&gt;16) &amp; 0xff;
+      mem[ --reg_sp ] = (reg_pc&gt;&gt;8)  &amp; 0xff;
+      mem[ --reg_sp ] = (reg_pc&gt;&gt;0)  &amp; 0xff;
+      reg_pc = tmp;
+      break;
+
+    // ret;	スタックにプッシュされたアドレスPCレジスタに復帰する
+    case RET:
+      reg_pc = mem[ reg_sp++ ] | (mem[ reg_sp++ ] &lt;&lt; 8) | (mem[ reg_sp++ ] &lt;&lt; 16);
+      break;
+
+    // push a;	Aレジスタの内容をスタックにプッシュする
+    case PUSHA:
+      mem[ --reg_sp ] = reg_a;
+      break;
+
+    // push x;	Xレジスタの内容をスタックにプッシュする 
+    case PUSHX:
+      mem[ --reg_sp ] = (reg_x&gt;&gt;16) &amp; 0xff;
+      mem[ --reg_sp ] = (reg_x&gt;&gt;8)  &amp; 0xff;
+      mem[ --reg_sp ] = (reg_x&gt;&gt;0)  &amp; 0xff;
+      break;
+
+    // pop a;	スタックからAレジスタの内容を復帰する 
+    case POPA:
+      reg_a = mem[ reg_sp++ ];
+      break;
+
+    // pop x;	スタックからXレジスタの内容を復帰する 
+    case POPX:
+      reg_x = mem[ reg_sp++ ] | (mem[ reg_sp++ ] &lt;&lt; 8) | (mem[ reg_sp++ ] &lt;&lt; 16);
+      break;
+
+    // txs;	Xレジスタスの内容をスタックポインタに転送する 
+    case TXS:
+      reg_sp = reg_x;
+      break;
+
+    // tsx;	スタックポインタの内容をXレジスタスに転送する 
+    case TSX:
+      reg_x = reg_sp;
+      break;
+
     }
 
     // メモリウィンドウ表示処理
@@ -550,6 +597,7 @@ public void exec_one_cycle(){
     x_reg.setText(hex6(reg_x));
     y_reg.setText(hex6(reg_y));
     a_reg.setText(hex2(reg_a));
+    sp_reg.setText(hex6(reg_sp));
 
     // フラグ表示処理
     if( reg_cf != 0 ) cf_reg.setBackground(Color.green); else  cf_reg.setBackground(Color.lightGray);
@@ -564,8 +612,8 @@ public void exec_one_cycle(){
 </codeclip>
 <aobject>
 <ID>_A24</ID>
-<x0>230</x0>
-<y0>363</y0>
+<x0>226</x0>
+<y0>289</y0>
 <width>147</width>
 <height>85</height>
 <ID_maker>11</ID_maker>
@@ -673,10 +721,10 @@ if( run_mode != 0 ){
 </relation>
 <codeclip>
 <ID>_C32</ID>
-<x0>411</x0>
-<y0>1</y0>
-<width>588</width>
-<height>550</height>
+<x0>410</x0>
+<y0>4</y0>
+<width>591</width>
+<height>636</height>
 <codetext>// 仮想マシンの命令セット
 static final int HLT=0;	// hlt;	停止する
 static final int LXI=1;	// lxi xxxx;	Xレジスタにxxxxの値をセットする
@@ -699,8 +747,6 @@ static final int JNZ=17;	// jnz xxxx;	ZFが0のときxxxx番地にジャンプ�
 static final int JC=18;	// jc xxxx;	CFが１のときxxxx番地にジャンプする
 static final int JNC=19;	// jnc xxxx;	CFが0のときxxxx番地にジャンプする
 static final int JMPX=20;	// jmpx;	Xレジスタが示す番地にジャンプする
-
-// ここから拡張命令(可能ならば実装する)
 static final int JMPY=21;	// jmpy;	Yレジスタが示す番地にジャンプする
 static final int LYI=22;	// lyi xxxx;	Yレジスタにxxxxの値をセットする
 static final int LDY=23;	// ldy xxxx;	Yレジスタにxxxx番地の内容を転送する
@@ -713,6 +759,35 @@ static final int ADC_Y=29;// adc_y;	AレジスタにYレジスタが示す番地
 static final int SBC_Y=30;// sbc_y;	AレジスタからYレジスタが示す番地の内容をキャリー付き減算する
 static final int AND_Y=31;// and_y;	AレジスタにYレジスタが示す番地の内容をAND演算する(CFは0にする)
 static final int OR_Y=32;	// or_y;	AレジスタにYレジスタが示す番地の内容をOR演算する(CFは1にする)
+static final int CALL=33;	// call xxxx;	PCレジスタの内容をスタックにプッシュしてxxxx番地にジャンプする
+static final int RET=34;	// ret;	スタックにプッシュされたアドレスPCレジスタに復帰する
+static final int PUSHA=35;// push a;	Aレジスタの内容をスタックにプッシュする
+static final int PUSHX=36;// push x;	Xレジスタの内容をスタックにプッシュする 
+static final int POPA=37;	// pop a;	スタックからAレジスタの内容を復帰する 
+static final int POPX=38;	// pop x;	スタックからXレジスタの内容を復帰する 
+static final int TXS=39;	// txs;	Xレジスタスの内容をスタックポインタに転送する 
+static final int TSX=40;	// tsx;	スタックポインタの内容をXレジスタスに転送する 
+
+
+</codetext>
+</codeclip>
+<codeclip>
+<ID>_C34</ID>
+<x0>168</x0>
+<y0>469</y0>
+<width>222</width>
+<height>152</height>
+<codetext>/*
+  仮想マシンのレジスタセット
+
+  PC: プログラムカウンタ
+  A:   アキュムレータ
+  X:   インデックスレジスタX
+  Y:   インデックスレジスタY
+  SP:  スタックポインタ
+
+*/
+
 </codetext>
 </codeclip>
 </xobject>
@@ -720,13 +795,14 @@ static final int OR_Y=32;	// or_y;	AレジスタにYレジスタが示す番地�
 <ID>_C9</ID>
 <x0>500</x0>
 <y0>426</y0>
-<width>366</width>
-<height>184</height>
+<width>387</width>
+<height>200</height>
 <codetext>// 変数
 int[] mem;
-int reg_pc, reg_x, reg_y, reg_a, reg_cf, reg_zf; 
+int reg_pc, reg_x, reg_y, reg_a, reg_sp, reg_cf, reg_zf; 
 JButton run_button; int run_mode = 0;
-JTextField pc_reg, x_reg, y_reg, a_reg;
+JCheckBox fast_mode;
+JTextField pc_reg, x_reg, y_reg, a_reg, sp_reg;
 JTextField adrs_field, data_field;
 JLabel cf_reg, zf_reg;
 JTextArea message_area;
@@ -759,22 +835,22 @@ int is_break;
 </relation>
 <xobject>
 <ID>_X19</ID>
-<x0>465</x0>
+<x0>459</x0>
 <y0>0</y0>
-<width>223</width>
-<height>403</height>
-<ID_maker>72</ID_maker>
+<width>224</width>
+<height>410</height>
+<ID_maker>78</ID_maker>
 <objectname>set_variables</objectname>
 <description></description>
 <pin>
 <ID>_P0</ID>
-<x0>0</x0>
-<y0>116</y0>
+<x0>162</x0>
+<y0>100</y0>
 <width>164</width>
 <height>19</height>
 <text>x_reg_is(JTextField t)</text>
 <px>0</px>
-<py>116</py>
+<py>128</py>
 </pin>
 <pin>
 <ID>_P1</ID>
@@ -784,7 +860,7 @@ int is_break;
 <height>22</height>
 <text>y_reg_is(JTextField t)</text>
 <px>0</px>
-<py>91</py>
+<py>108</py>
 </pin>
 <pin>
 <ID>_P2</ID>
@@ -794,7 +870,7 @@ int is_break;
 <height>23</height>
 <text>a_reg_is(JTextField t)</text>
 <px>0</px>
-<py>68</py>
+<py>89</py>
 </pin>
 <pin>
 <ID>_P6</ID>
@@ -804,7 +880,7 @@ int is_break;
 <height>22</height>
 <text>cf_reg_is(JLabel l)</text>
 <px>0</px>
-<py>139</py>
+<py>161</py>
 </pin>
 <pin>
 <ID>_P7</ID>
@@ -814,7 +890,7 @@ int is_break;
 <height>22</height>
 <text>zf_reg_is(JLabel l)</text>
 <px>0</px>
-<py>160</py>
+<py>184</py>
 </pin>
 <pin>
 <ID>_P10</ID>
@@ -824,7 +900,7 @@ int is_break;
 <height>22</height>
 <text>message_area_is(JTextArea t)</text>
 <px>0</px>
-<py>189</py>
+<py>204</py>
 </pin>
 <pin>
 <ID>_P11</ID>
@@ -834,7 +910,7 @@ int is_break;
 <height>21</height>
 <text>clock_field_is(JTextField t)</text>
 <px>0</px>
-<py>210</py>
+<py>224</py>
 </pin>
 <pin>
 <ID>_P12</ID>
@@ -844,7 +920,7 @@ int is_break;
 <height>24</height>
 <text>no_field_is(JTextField t)</text>
 <px>0</px>
-<py>232</py>
+<py>244</py>
 </pin>
 <pin>
 <ID>_P13</ID>
@@ -854,7 +930,7 @@ int is_break;
 <height>21</height>
 <text>start_field_is(JTextField t)</text>
 <px>0</px>
-<py>271</py>
+<py>287</py>
 </pin>
 <pin>
 <ID>_P14</ID>
@@ -864,7 +940,7 @@ int is_break;
 <height>27</height>
 <text>end_field_is(JTextField t)</text>
 <px>0</px>
-<py>293</py>
+<py>304</py>
 </pin>
 <pin>
 <ID>_P15</ID>
@@ -874,7 +950,7 @@ int is_break;
 <height>27</height>
 <text>interval_field_is(JTextField t)</text>
 <px>0</px>
-<py>315</py>
+<py>325</py>
 </pin>
 <pin>
 <ID>_P16</ID>
@@ -894,7 +970,7 @@ int is_break;
 <height>24</height>
 <text>pc_reg_is(JTextField t)</text>
 <px>0</px>
-<py>334</py>
+<py>346</py>
 </pin>
 <operation>
 <ID>_O18</ID>
@@ -1363,7 +1439,7 @@ mem = new int[AD_SIZE];
 <height>26</height>
 <text>adrs_field_is(JTextField t)</text>
 <px>0</px>
-<py>373</py>
+<py>389</py>
 </pin>
 <pin>
 <ID>_P63</ID>
@@ -1373,7 +1449,7 @@ mem = new int[AD_SIZE];
 <height>24</height>
 <text>data_field_is(JTextField t)</text>
 <px>0</px>
-<py>352</py>
+<py>370</py>
 </pin>
 <operation>
 <ID>_O65</ID>
@@ -1442,19 +1518,19 @@ mem = new int[AD_SIZE];
 <pin>
 <ID>_P69</ID>
 <x0>0</x0>
-<y0>540</y0>
+<y0>520</y0>
 <width>182</width>
 <height>30</height>
 <text>name_field_is(JTextField t)</text>
 <px>0</px>
-<py>252</py>
+<py>265</py>
 </pin>
 <operation>
 <ID>_O70</ID>
 <state1>_SINIT</state1>
 <state2>_SINIT</state2>
-<x0>265</x0>
-<y0>518</y0>
+<x0>623</x0>
+<y0>497</y0>
 <width>134</width>
 <height>50</height>
 <inconnectx0>0</inconnectx0>
@@ -1480,6 +1556,91 @@ mem = new int[AD_SIZE];
 <ID>_R71</ID>
 <pin1name>_P69</pin1name>
 <pin2name>_O70</pin2name>
+</relation>
+<pin>
+<ID>_P72</ID>
+<x0>0</x0>
+<y0>554</y0>
+<width>154</width>
+<height>24</height>
+<text>sp_reg_is(JTextField t)</text>
+<px>0</px>
+<py>145</py>
+</pin>
+<pin>
+<ID>_P73</ID>
+<x0>0</x0>
+<y0>602</y0>
+<width>184</width>
+<height>29</height>
+<text>fast_mode_is(JCheckBox b)</text>
+<px>0</px>
+<py>67</py>
+</pin>
+<operation>
+<ID>_O74</ID>
+<state1>_SINIT</state1>
+<state2>_SINIT</state2>
+<x0>764</x0>
+<y0>527</y0>
+<width>134</width>
+<height>50</height>
+<inconnectx0>0</inconnectx0>
+<inconnecty0>40</inconnecty0>
+<outconnectx0>0</outconnectx0>
+<outconnecty0>40</outconnecty0>
+<inpintext>in(JTextField t)</inpintext>
+<inpinx0>0</inpinx0>
+<inpiny0>26</inpiny0>
+<inpinwidth>104</inpinwidth>
+<inpinheight>24</inpinheight>
+<outpintext>out()</outpintext>
+<outpinx0>90</outpinx0>
+<outpiny0>40</outpiny0>
+<outpinwidth>40</outpinwidth>
+<outpinheight>20</outpinheight>
+<inpinlinkcount>1</inpinlinkcount>
+<description></description>
+<codetext>sp_reg = t;
+</codetext>
+</operation>
+<relation>
+<ID>_R75</ID>
+<pin1name>_P72</pin1name>
+<pin2name>_O74</pin2name>
+</relation>
+<operation>
+<ID>_O76</ID>
+<state1>_SINIT</state1>
+<state2>_SINIT</state2>
+<x0>365</x0>
+<y0>578</y0>
+<width>134</width>
+<height>50</height>
+<inconnectx0>0</inconnectx0>
+<inconnecty0>40</inconnecty0>
+<outconnectx0>0</outconnectx0>
+<outconnecty0>40</outconnecty0>
+<inpintext>in(JCheckBox b)</inpintext>
+<inpinx0>0</inpinx0>
+<inpiny0>27</inpiny0>
+<inpinwidth>104</inpinwidth>
+<inpinheight>24</inpinheight>
+<outpintext>out()</outpintext>
+<outpinx0>90</outpinx0>
+<outpiny0>40</outpiny0>
+<outpinwidth>40</outpinwidth>
+<outpinheight>20</outpinheight>
+<inpinlinkcount>1</inpinlinkcount>
+<description></description>
+<codetext>fast_mode = b;
+
+</codetext>
+</operation>
+<relation>
+<ID>_R77</ID>
+<pin1name>_P73</pin1name>
+<pin2name>_O76</pin2name>
 </relation>
 </xobject>
 <relation>
@@ -2526,16 +2687,6 @@ public String hex6( int i ){
 </codetext>
 </codeclip>
 <relation>
-<ID>_R63</ID>
-<pin1name>_A0(_Pa_reg)</pin1name>
-<pin2name>_X19(_P2)</pin2name>
-</relation>
-<relation>
-<ID>_R64</ID>
-<pin1name>_A0(_Py_reg)</pin1name>
-<pin2name>_X19(_P1)</pin2name>
-</relation>
-<relation>
 <ID>_R65</ID>
 <pin1name>_A0(_Px_reg)</pin1name>
 <pin2name>_X19(_P0)</pin2name>
@@ -2544,11 +2695,6 @@ public String hex6( int i ){
 <ID>_R66</ID>
 <pin1name>_A0(_Pcf_reg)</pin1name>
 <pin2name>_X19(_P6)</pin2name>
-</relation>
-<relation>
-<ID>_R67</ID>
-<pin1name>_A0(_Pzf_reg)</pin1name>
-<pin2name>_X19(_P7)</pin2name>
 </relation>
 <relation>
 <ID>_R68</ID>
@@ -2783,10 +2929,30 @@ din.close();
 <pin1name>_A0(_Pname_field)</pin1name>
 <pin2name>_X19(_P69)</pin2name>
 </relation>
+<relation>
+<ID>_R82</ID>
+<pin1name>_A0(_Pa_reg)</pin1name>
+<pin2name>_X19(_P2)</pin2name>
+</relation>
+<relation>
+<ID>_R83</ID>
+<pin1name>_A0(_Py_reg)</pin1name>
+<pin2name>_X19(_P1)</pin2name>
+</relation>
+<relation>
+<ID>_R84</ID>
+<pin1name>_A0(_Psp_reg)</pin1name>
+<pin2name>_X19(_P72)</pin2name>
+</relation>
+<relation>
+<ID>_R85</ID>
+<pin1name>_A0(_Pzf_reg)</pin1name>
+<pin2name>_X19(_P7)</pin2name>
+</relation>
 <aobject>
 <ID>_A0</ID>
-<x0>168</x0>
-<y0>0</y0>
+<x0>167</x0>
+<y0>1</y0>
 <width>280</width>
 <objectname>GUI</objectname>
 <description>GUIオブジェクト
@@ -2895,244 +3061,264 @@ XGUI x = new XGUI();
 <py>108</py>
 </pin>
 <pin>
-<ID>_PAedit_button</ID>
+<ID>_Pfast_mode</ID>
 <x0>0</x0>
 <y0>194</y0>
 <width>200</width>
 <height>26</height>
-<text>edit_button_clicked()</text>
+<text>fast_mode_created(JCheckBox c)</text>
 <px>0</px>
 <py>126</py>
 </pin>
 <pin>
-<ID>_Pa_reg</ID>
+<ID>_PAedit_button</ID>
 <x0>0</x0>
 <y0>222</y0>
 <width>200</width>
 <height>26</height>
-<text>a_reg_created(JTextField t)</text>
+<text>edit_button_clicked()</text>
 <px>0</px>
 <py>144</py>
 </pin>
 <pin>
-<ID>_Py_reg</ID>
+<ID>_Pa_reg</ID>
 <x0>0</x0>
 <y0>250</y0>
 <width>200</width>
 <height>26</height>
-<text>y_reg_created(JTextField t)</text>
+<text>a_reg_created(JTextField t)</text>
 <px>0</px>
 <py>162</py>
 </pin>
 <pin>
-<ID>_Px_reg</ID>
+<ID>_Py_reg</ID>
 <x0>0</x0>
 <y0>278</y0>
 <width>200</width>
 <height>26</height>
-<text>x_reg_created(JTextField t)</text>
+<text>y_reg_created(JTextField t)</text>
 <px>0</px>
 <py>180</py>
 </pin>
 <pin>
-<ID>_Pcf_reg</ID>
+<ID>_Px_reg</ID>
 <x0>0</x0>
 <y0>306</y0>
 <width>200</width>
 <height>26</height>
-<text>cf_reg_created(JLabel l)</text>
+<text>x_reg_created(JTextField t)</text>
 <px>0</px>
 <py>198</py>
 </pin>
 <pin>
-<ID>_Pzf_reg</ID>
+<ID>_Psp_reg</ID>
 <x0>0</x0>
 <y0>334</y0>
 <width>200</width>
 <height>26</height>
-<text>zf_reg_created(JLabel l)</text>
+<text>sp_reg_created(JTextField t)</text>
 <px>0</px>
 <py>216</py>
 </pin>
 <pin>
-<ID>_Pmessage_area</ID>
+<ID>_Pcf_reg</ID>
 <x0>0</x0>
 <y0>362</y0>
 <width>200</width>
 <height>26</height>
-<text>message_area_created(JTextArea t)</text>
+<text>cf_reg_created(JLabel l)</text>
 <px>0</px>
 <py>234</py>
 </pin>
 <pin>
-<ID>_PAadd_button</ID>
+<ID>_Pzf_reg</ID>
 <x0>0</x0>
 <y0>390</y0>
 <width>200</width>
 <height>26</height>
-<text>add_button_clicked()</text>
+<text>zf_reg_created(JLabel l)</text>
 <px>0</px>
 <py>252</py>
 </pin>
 <pin>
-<ID>_PAremove_button</ID>
+<ID>_Pmessage_area</ID>
 <x0>0</x0>
 <y0>418</y0>
 <width>200</width>
 <height>26</height>
-<text>remove_button_clicked()</text>
+<text>message_area_created(JTextArea t)</text>
 <px>0</px>
 <py>270</py>
 </pin>
 <pin>
-<ID>_PAsingle_button</ID>
+<ID>_PAadd_button</ID>
 <x0>0</x0>
 <y0>446</y0>
 <width>200</width>
 <height>26</height>
-<text>single_button_clicked()</text>
+<text>add_button_clicked()</text>
 <px>0</px>
 <py>288</py>
 </pin>
 <pin>
-<ID>_Pclock_field</ID>
+<ID>_PAremove_button</ID>
 <x0>0</x0>
 <y0>474</y0>
 <width>200</width>
 <height>26</height>
-<text>clock_field_created(JTextField t)</text>
+<text>remove_button_clicked()</text>
 <px>0</px>
 <py>306</py>
 </pin>
 <pin>
-<ID>_Pno_field</ID>
+<ID>_PAsingle_button</ID>
 <x0>0</x0>
 <y0>502</y0>
 <width>200</width>
 <height>26</height>
-<text>no_field_created(JTextField t)</text>
+<text>single_button_clicked()</text>
 <px>0</px>
 <py>324</py>
 </pin>
 <pin>
-<ID>_PAno_field</ID>
+<ID>_Pclock_field</ID>
 <x0>0</x0>
 <y0>530</y0>
 <width>200</width>
 <height>26</height>
-<text>no_field_input(String s)</text>
+<text>clock_field_created(JTextField t)</text>
 <px>0</px>
 <py>342</py>
 </pin>
 <pin>
-<ID>_Pname_field</ID>
+<ID>_Pno_field</ID>
 <x0>0</x0>
 <y0>558</y0>
 <width>200</width>
 <height>26</height>
-<text>name_field_created(JTextField t)</text>
+<text>no_field_created(JTextField t)</text>
 <px>0</px>
 <py>360</py>
 </pin>
 <pin>
-<ID>_Pstart_field</ID>
+<ID>_PAno_field</ID>
 <x0>0</x0>
 <y0>586</y0>
 <width>200</width>
 <height>26</height>
-<text>start_field_created(JTextField t)</text>
+<text>no_field_input(String s)</text>
 <px>0</px>
 <py>378</py>
 </pin>
 <pin>
-<ID>_Pend_field</ID>
+<ID>_Pname_field</ID>
 <x0>0</x0>
 <y0>614</y0>
 <width>200</width>
 <height>26</height>
-<text>end_field_created(JTextField t)</text>
+<text>name_field_created(JTextField t)</text>
 <px>0</px>
 <py>396</py>
 </pin>
 <pin>
-<ID>_Pinterval_field</ID>
+<ID>_Pstart_field</ID>
 <x0>0</x0>
 <y0>642</y0>
 <width>200</width>
 <height>26</height>
-<text>interval_field_created(JTextField t)</text>
+<text>start_field_created(JTextField t)</text>
 <px>0</px>
 <py>414</py>
 </pin>
 <pin>
-<ID>_Ppc_reg</ID>
+<ID>_Pend_field</ID>
 <x0>0</x0>
 <y0>670</y0>
 <width>200</width>
 <height>26</height>
-<text>pc_reg_created(JTextField t)</text>
+<text>end_field_created(JTextField t)</text>
 <px>0</px>
 <py>432</py>
 </pin>
 <pin>
-<ID>_Pdata_field</ID>
+<ID>_Pinterval_field</ID>
 <x0>0</x0>
 <y0>698</y0>
 <width>200</width>
 <height>26</height>
-<text>data_field_created(JTextField t)</text>
+<text>interval_field_created(JTextField t)</text>
 <px>0</px>
 <py>450</py>
 </pin>
 <pin>
-<ID>_Padrs_field</ID>
+<ID>_Ppc_reg</ID>
 <x0>0</x0>
 <y0>726</y0>
 <width>200</width>
 <height>26</height>
-<text>adrs_field_created(JTextField t)</text>
+<text>pc_reg_created(JTextField t)</text>
 <px>0</px>
 <py>468</py>
 </pin>
 <pin>
-<ID>_PAadrs_field</ID>
+<ID>_Pdata_field</ID>
 <x0>0</x0>
 <y0>754</y0>
 <width>200</width>
 <height>26</height>
-<text>adrs_field_input(String s)</text>
+<text>data_field_created(JTextField t)</text>
 <px>0</px>
 <py>486</py>
 </pin>
 <pin>
-<ID>_PAinc_addr</ID>
+<ID>_Padrs_field</ID>
 <x0>0</x0>
 <y0>782</y0>
 <width>200</width>
 <height>26</height>
-<text>inc_addr_clicked()</text>
+<text>adrs_field_created(JTextField t)</text>
 <px>0</px>
 <py>504</py>
 </pin>
 <pin>
-<ID>_PAdec_addr</ID>
+<ID>_PAadrs_field</ID>
 <x0>0</x0>
 <y0>810</y0>
 <width>200</width>
 <height>26</height>
-<text>dec_addr_clicked()</text>
+<text>adrs_field_input(String s)</text>
 <px>0</px>
 <py>522</py>
 </pin>
 <pin>
-<ID>_PAmem_set</ID>
+<ID>_PAinc_addr</ID>
 <x0>0</x0>
 <y0>838</y0>
 <width>200</width>
 <height>26</height>
-<text>mem_set_clicked()</text>
+<text>inc_addr_clicked()</text>
 <px>0</px>
 <py>540</py>
+</pin>
+<pin>
+<ID>_PAdec_addr</ID>
+<x0>0</x0>
+<y0>866</y0>
+<width>200</width>
+<height>26</height>
+<text>dec_addr_clicked()</text>
+<px>0</px>
+<py>558</py>
+</pin>
+<pin>
+<ID>_PAmem_set</ID>
+<x0>0</x0>
+<y0>894</y0>
+<width>200</width>
+<height>26</height>
+<text>mem_set_clicked()</text>
+<px>0</px>
+<py>576</py>
 </pin>
 <codeclip>
 <ID>_CXSTART</ID>
@@ -3172,6 +3358,17 @@ run_button Irun_button;
  run_button_created( this );
 }
  public void actionPerformed( ActionEvent e ){ run_button_clicked(); }
+}
+fast_mode Ifast_mode;
+ class fast_mode extends JCheckBox{
+  fast_mode(){
+ setOpaque( true );
+ setName(  &quot;fast_mode&quot; );
+ setForeground( new Color(  51, 51, 51 ));
+ setBackground( new Color(  254, 250, 156 ));
+ setSelected( false );
+ fast_mode_created( this );
+}
 }
 LABEL2 ILABEL2;
  class LABEL2 extends JLabel{
@@ -3263,6 +3460,18 @@ x_reg Ix_reg;
  x_reg_created( this );
 }
 }
+sp_reg Isp_reg;
+ class sp_reg extends JTextField{
+  sp_reg(){
+ setOpaque( true );
+ setName(  &quot;sp_reg&quot; );
+ setFont( new Font( &quot;Dialog&quot;, 0, 9 ));
+ setForeground( new Color(  51, 51, 51 ));
+ setBackground( new Color(  255, 255, 255 ));
+ setText( &quot;000000&quot; );
+ sp_reg_created( this );
+}
+}
 cf_reg Icf_reg;
  class cf_reg extends JLabel{
   cf_reg(){
@@ -3315,7 +3524,7 @@ add_button Iadd_button;
  setBackground( new Color(  192, 192, 192 ));
  setHorizontalAlignment( 0 );
  setVerticalAlignment( 0 );
- setText( &quot;add&quot; );
+ setText( &quot;+&quot; );
  addActionListener( this );
 }
  public void actionPerformed( ActionEvent e ){ add_button_clicked(); }
@@ -3330,7 +3539,7 @@ remove_button Iremove_button;
  setBackground( new Color(  192, 192, 192 ));
  setHorizontalAlignment( 0 );
  setVerticalAlignment( 0 );
- setText( &quot;del&quot; );
+ setText( &quot;-&quot; );
  addActionListener( this );
 }
  public void actionPerformed( ActionEvent e ){ remove_button_clicked(); }
@@ -3611,11 +3820,37 @@ mem_set Imem_set;
 }
  public void actionPerformed( ActionEvent e ){ mem_set_clicked(); }
 }
+LABEL35 ILABEL35;
+ class LABEL35 extends JLabel{
+  LABEL35(){
+ setOpaque( true );
+ setName(  &quot;LABEL35&quot; );
+ setFont( new Font( &quot;Dialog&quot;, 0, 12 ));
+ setForeground( new Color(  51, 51, 51 ));
+ setBackground( new Color(  192, 192, 192 ));
+ setHorizontalAlignment( 0 );
+ setVerticalAlignment( 0 );
+ setText( &quot;SP:&quot; );
+}
+}
+LABEL38 ILABEL38;
+ class LABEL38 extends JLabel{
+  LABEL38(){
+ setOpaque( true );
+ setName(  &quot;LABEL38&quot; );
+ setFont( new Font( &quot;Dialog&quot;, 0, 12 ));
+ setForeground( new Color(  51, 51, 51 ));
+ setBackground( new Color(  254, 250, 156 ));
+ setHorizontalAlignment( 0 );
+ setVerticalAlignment( 0 );
+ setText( &quot;FAST MODE&quot; );
+}
+}
  XGUI(){
  setTitle(&quot;CARD8VMシミュレータ&quot;);
  cnt = new JPanel( new BorderLayout() );
- cnt.setPreferredSize(  new  Dimension( 410, 583 ) );
- ((Component)cnt).setBackground( new Color( 238, 238, 238 ) );
+ cnt.setPreferredSize(  new  Dimension( 403, 584 ) );
+ ((Component)cnt).setBackground( new Color( 254, 250, 156 ) );
  Icompile_button = new compile_button();
  cnt.add( Icompile_button, 0 );
  cnt.getLayout().removeLayoutComponent( Icompile_button );
@@ -3624,6 +3859,10 @@ mem_set Imem_set;
  cnt.add( Irun_button, 0 );
  cnt.getLayout().removeLayoutComponent( Irun_button );
  Irun_button.setBounds( 113, 3, 69, 28 );
+ Ifast_mode = new fast_mode();
+ cnt.add( Ifast_mode, 0 );
+ cnt.getLayout().removeLayoutComponent( Ifast_mode );
+ Ifast_mode.setBounds( 253, 3, 24, 28 );
  ILABEL2 = new LABEL2();
  cnt.add( ILABEL2, 0 );
  cnt.getLayout().removeLayoutComponent( ILABEL2 );
@@ -3652,26 +3891,30 @@ mem_set Imem_set;
  cnt.add( Ix_reg, 0 );
  cnt.getLayout().removeLayoutComponent( Ix_reg );
  Ix_reg.setBounds( 167, 63, 47, 24 );
+ Isp_reg = new sp_reg();
+ cnt.add( Isp_reg, 0 );
+ cnt.getLayout().removeLayoutComponent( Isp_reg );
+ Isp_reg.setBounds( 300, 63, 50, 25 );
  Icf_reg = new cf_reg();
  cnt.add( Icf_reg, 0 );
  cnt.getLayout().removeLayoutComponent( Icf_reg );
- Icf_reg.setBounds( 299, 35, 49, 25 );
+ Icf_reg.setBounds( 351, 35, 25, 25 );
  Izf_reg = new zf_reg();
  cnt.add( Izf_reg, 0 );
  cnt.getLayout().removeLayoutComponent( Izf_reg );
- Izf_reg.setBounds( 351, 36, 54, 24 );
+ Izf_reg.setBounds( 380, 35, 23, 24 );
  Imessage_area = new message_area();
  cnt.add( Imessage_area.scrl, 0 );
  cnt.getLayout().removeLayoutComponent( Imessage_area.scrl );
- (  Imessage_area.scrl ).setBounds( 7, 141, 398, 434 );
+ (  Imessage_area.scrl ).setBounds( 3, 138, 398, 434 );
  Iadd_button = new add_button();
  cnt.add( Iadd_button, 0 );
  cnt.getLayout().removeLayoutComponent( Iadd_button );
- Iadd_button.setBounds( 299, 64, 50, 26 );
+ Iadd_button.setBounds( 352, 62, 24, 26 );
  Iremove_button = new remove_button();
  cnt.add( Iremove_button, 0 );
  cnt.getLayout().removeLayoutComponent( Iremove_button );
- Iremove_button.setBounds( 353, 64, 51, 27 );
+ Iremove_button.setBounds( 380, 62, 23, 26 );
  Isingle_button = new single_button();
  cnt.add( Isingle_button, 0 );
  cnt.getLayout().removeLayoutComponent( Isingle_button );
@@ -3756,6 +3999,14 @@ mem_set Imem_set;
  cnt.add( Imem_set, 0 );
  cnt.getLayout().removeLayoutComponent( Imem_set );
  Imem_set.setBounds( 57, 32, 52, 22 );
+ ILABEL35 = new LABEL35();
+ cnt.add( ILABEL35, 0 );
+ cnt.getLayout().removeLayoutComponent( ILABEL35 );
+ ILABEL35.setBounds( 298, 35, 50, 25 );
+ ILABEL38 = new LABEL38();
+ cnt.add( ILABEL38, 0 );
+ cnt.getLayout().removeLayoutComponent( ILABEL38 );
+ ILABEL38.setBounds( 280, 3, 117, 28 );
  setContentPane( cnt );
  pack();
  addWindowListener( this );
@@ -3772,17 +4023,18 @@ mem_set Imem_set;
 }
 </codetext>
 </codeclip>
-<ID_maker>47</ID_maker>
-<height>562</height>
+<ID_maker>49</ID_maker>
+<height>598</height>
 <レイアウト>CARD8VMシミュレータ
-410
-583
-238
-238
-238
+403
+584
+254
+250
+156
 xxscale=1
 BUTTON;compile_button;Compile;3;3;106;27;51;51;51;192;192;192;Dialog;12;null;0;0;1;0;1;JButton;
 BUTTON;run_button;run;113;3;69;28;51;51;51;192;192;192;Dialog;12;null;0;0;1;1;1;JButton;
+CHECKBOX;fast_mode;0;253;3;24;28;51;51;51;254;250;156;1;1;0;JCheckBox;
 LABEL;LABEL2;A:;264;35;32;24;51;51;51;192;192;192;Dialog;12;null;0;0;1;0;0;JLabel;
 LABEL;LABEL3;Y:;214;35;46;24;51;51;51;192;192;192;Dialog;12;null;0;0;1;0;0;JLabel;
 LABEL;LABEL4;X:;167;35;44;24;51;51;51;192;192;192;Dialog;12;null;0;0;1;0;0;JLabel;
@@ -3790,11 +4042,12 @@ BUTTON;edit_button;edit;186;2;64;29;51;51;51;192;192;192;Dialog;12;null;0;0;1;0;
 TEXTFIELD;a_reg;00;263;64;35;25;51;51;51;255;255;255;Dialog;9;1;1;0;JTextField;
 TEXTFIELD;y_reg;000000;215;64;46;23;51;51;51;255;255;255;Dialog;9;1;1;0;JTextField;
 TEXTFIELD;x_reg;000000;167;63;47;24;51;51;51;255;255;255;Dialog;9;1;1;0;JTextField;
-LABEL;cf_reg;CF;299;35;49;25;51;51;51;192;192;192;Dialog;10;null;0;0;1;1;0;JLabel;
-LABEL;zf_reg;ZF;351;36;54;24;51;51;51;192;192;192;Dialog;10;null;0;0;1;1;0;JLabel;
-TEXTAREA;message_area;null;7;141;398;434;51;51;51;255;255;255;Dialog;12;1;1;1;JTextArea;
-BUTTON;add_button;add;299;64;50;26;51;51;51;192;192;192;Dialog;12;null;0;0;1;0;1;JButton;
-BUTTON;remove_button;del;353;64;51;27;51;51;51;192;192;192;Dialog;12;null;0;0;1;0;1;JButton;
+TEXTFIELD;sp_reg;000000;300;63;50;25;51;51;51;255;255;255;Dialog;9;1;1;0;JTextField;
+LABEL;cf_reg;CF;351;35;25;25;51;51;51;192;192;192;Dialog;10;null;0;0;1;1;0;JLabel;
+LABEL;zf_reg;ZF;380;35;23;24;51;51;51;192;192;192;Dialog;10;null;0;0;1;1;0;JLabel;
+TEXTAREA;message_area;null;3;138;398;434;51;51;51;255;255;255;Dialog;12;1;1;1;JTextArea;
+BUTTON;add_button;+;352;62;24;26;51;51;51;192;192;192;Dialog;12;null;0;0;1;0;1;JButton;
+BUTTON;remove_button;-;380;62;23;26;51;51;51;192;192;192;Dialog;12;null;0;0;1;0;1;JButton;
 BUTTON;single_button;1step;63;80;47;53;51;51;51;192;192;192;Dialog;12;null;0;0;1;0;1;JButton;
 LABEL;LABEL24;CYCLE:;1;80;59;22;51;51;51;192;192;192;Dialog;12;null;2;0;1;0;0;JLabel;
 TEXTFIELD;clock_field;0;3;105;56;30;51;51;51;255;255;255;Dialog;12;1;1;0;JTextField;
@@ -3816,6 +4069,13 @@ TEXTFIELD;adrs_field;000000;1;56;70;22;51;51;51;255;255;255;Dialog;10;1;1;1;JTex
 BUTTON;inc_addr;+;3;32;24;21;51;51;51;192;192;192;Dialog;12;null;0;0;1;0;1;JButton;
 BUTTON;dec_addr;-;29;32;26;21;51;51;51;192;192;192;Dialog;12;null;0;0;1;0;1;JButton;
 BUTTON;mem_set;WRT;57;32;52;22;51;51;51;192;192;192;Dialog;12;null;0;0;1;0;1;JButton;
+LABEL;LABEL35;SP:;298;35;50;25;51;51;51;192;192;192;Dialog;12;null;0;0;1;0;0;JLabel;
+LABEL;LABEL38;FAST MODE;280;3;117;28;51;51;51;254;250;156;Dialog;12;null;0;0;1;0;0;JLabel;
 </レイアウト>
 </aobject>
+<relation>
+<ID>_R86</ID>
+<pin1name>_A0(_Pfast_mode)</pin1name>
+<pin2name>_X19(_P73)</pin2name>
+</relation>
 </xobject>
