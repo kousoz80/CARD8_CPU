@@ -1,44 +1,1995 @@
-PRINT_DATA = 0xffffff
-PRINT_STB = 0xfffffe
-
  org 0
- x=hello
- (p)=x
- x=12
- (i)=x
-loop:
- x=(p)
+EOF: = 255
+ERROR: = -1
+NULL: = 0
+SPACE: = 32
+CR: = 13
+LF: = 10
+PLUS: = 43
+MINUS: = 45
+ESC: = 27
+NaN: = 0x800000
+STACK_SIZE: = 8000
+KEY_DATA: = 0xfffffd
+PRT_STB: = 0xfffffe
+PRT_DATA: = 0xffffff
+_start:
+ x=__stack_top
+ sp=x
+ call main
+_end_loop:
+ jmp _end_loop
+mul:
+ x=r0+2
  a=(x)
- x+=(_001)
- (p)=x
- x=PRINT_DATA
+ x=__0x800000+2
+ a&=(x)
+ x=r1+2
+ a+=(x)+cf
+ x=__sgn
+ (x)=a
+ x=(r0)
+ x-=(__0x800000)
+ jc mul1
+ x=0
+ x-=(r0)
+ (r0)=x
+mul1:
+ x=(r1)
+ x-=(__0x800000)
+ jc mul2
+ x=0
+ x-=(r1)
+ (r1)=x
+mul2:
+ call umul
+ x=__sgn
+ a=(x)
+ x=__0x800000+2
+ a&=(x)
+ jz mul3
+ x=0
+ x-=(__ans)
+ (__ans)=x
+mul3:
+ ret
+umul:
+ x=0
+ (__ans)=x
+umul1:
+ a&=(x)
+ x=r1+2
+ ror (x)
+ x--
+ ror (x)
+ x--
+ ror (x)
+ jnc umul2
+ x=(__ans)
+ x+=(r0)
+ (__ans)=x
+umul2:
+ a&=(x)
+ x=r0
+ rol (x)
+ x++
+ rol (x)
+ x++
+ rol (x)
+ x=0
+ x+=(r1)
+ jnz umul1
+ ret
+div:
+ x=0
+ x+=(r1)
+ jz div_zero
+ x=r0+2
+ a=(x)
+ x=__0x800000+2
+ a&=(x)
+ x=r1+2
+ a+=(x)+cf
+ x=__sgn
+ (x)=a
+ x=(r0)
+ x-=(__0x800000)
+ jc div1
+ x=0
+ x-=(r0)
+ (r0)=x
+div1:
+ x=(r1)
+ x-=(__0x800000)
+ jc div2
+ x=0
+ x-=(r1)
+ (r1)=x
+div2:
+ call udiv
+ x=__sgn
+ a=(x)
+ x=__0x800000+2
+ a&=(x)
+ jz div3
+ x=0
+ x-=(__ans)
+ (__ans)=x
+div3:
+ ret
+udiv:
+ x=(r1)
+ x-=(r0)
+ jb div_under
+ x=0
+ (__ans)=x
+ x+=(r0)
+ jz div_zero
+udiv1:
+ x=__ans+2
+ ror (x)
+ x--
+ ror (x)
+ x--
+ ror (x)
+ x=r0
+ rol (x)
+ x++
+ rol (x)
+ x++
+ rol (x)
+ x=(r1)
+ x-=(r0)
+ jnb udiv1
+udiv2:
+ a&=(x)
+ x=r0+2
+ ror (x)
+ x--
+ ror (x)
+ x--
+ ror (x)
+ x=(r1)
+ x-=(r0)
+ jb udiv3
+ (r1)=x
+udiv3:
+ x=__ans
+ rol (x)
+ x++
+ rol (x)
+ x++
+ rol (x)
+ jc udiv2
+ ret
+div_zero:
+ x=NaN
+ (__ans)=x
+ ret
+div_under:
+ x=0
+ (__ans)=x
+ ret
+getchar:
+ x=KEY_DATA
+ a=0
+ (x)=a
+getchar1:
+ a=0
+ a|=(x)
+ jz getchar1
+ (x)=a
+ a=0
+ x++
+ (x)=a
+ x++
+ (x)=a
+ ret
+putchar:
+ x=r0
+ a=(x)
+ x=PRT_DATA
  (x)=a
  a=1
- x=PRINT_STB
+ x=PRT_STB
  (x)=a
- x=(i)
- x-=(_001)
+ ret
+prints:
+ x=(r0)
+ (__p6)=x
+__prints1:
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p6)
+ y=r0
+ a=(x)
+ (y)=a
+ y++
+ a=0
+ (y)=a
+ y++
+ (y)=a
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=NULL
+ (r0)=x
+ x=(r1)
+ x-=(r0)
+ jnz L209
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=NULL
+ (r0)=x
+ ret
+L209:
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p6)
+ y=r0
+ a=(x)
+ (y)=a
+ y++
+ a=0
+ (y)=a
+ y++
+ (y)=a
+ call putchar
+ x=(__p6)
+ x++
+ (__p6)=x
+ jmp __prints1
+printd:
+ call dec
+ call prints
+ ret
+nl:
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=LF
+ (r0)=x
+ call putchar
+ ret
+inputs:
+ x=(r0)
+ (__p6)=x
+__finputs1:
+ call getchar
+ x=__p5
+ y=r0
+ a=(y)
+ (x)=a
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=__p5
+ y=r0
+ a=(x)
+ (y)=a
+ y++
+ a=0
+ (y)=a
+ y++
+ (y)=a
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=LF
+ (r0)=x
+ x=(r1)
+ x-=(r0)
+ jz __finputs2
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=__p5
+ y=r0
+ a=(x)
+ (y)=a
+ y++
+ a=0
+ (y)=a
+ y++
+ (y)=a
+ x=(__p6)
+ y=r0
+ a=(y)
+ (x)=a
+ x=(__p6)
+ x++
+ (__p6)=x
+ jmp __finputs1
+__finputs2:
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=NULL
+ (r0)=x
+ x=(__p6)
+ y=r0
+ a=(y)
+ (x)=a
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=__p5
+ y=r0
+ a=(x)
+ (y)=a
+ y++
+ a=0
+ (y)=a
+ y++
+ (y)=a
+ ret
+strcmp:
+ x=(r0)
+ (__p2)=x
+ x=(r0)
+ (__tmp)=x
+ x=(r1)
+ (r0)=x
+ x=(__tmp)
+ (r1)=x
+ x=(r0)
+ (__p1)=x
+__strcmp1:
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p1)
+ y=r0
+ a=(x)
+ (y)=a
+ y++
+ a=0
+ (y)=a
+ y++
+ (y)=a
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p2)
+ y=r0
+ a=(x)
+ (y)=a
+ y++
+ a=0
+ (y)=a
+ y++
+ (y)=a
+ x=(r1)
+ x-=(r0)
+ jz L233
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=1
+ (r0)=x
+ ret
+L233:
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p1)
+ y=r0
+ a=(x)
+ (y)=a
+ y++
+ a=0
+ (y)=a
+ y++
+ (y)=a
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=NULL
+ (r0)=x
+ x=(r1)
+ x-=(r0)
+ jnz L234
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=0
+ (r0)=x
+ ret
+L234:
+ x=(__p1)
+ x++
+ (__p1)=x
+ x=(__p2)
+ x++
+ (__p2)=x
+ jmp __strcmp1
+strncmp:
+ x=(r0)
+ (__p3)=x
+ x=(r1)
+ (r0)=x
+ x=(r2)
+ (r1)=x
+ x=(r3)
+ (r2)=x
+ x=(r0)
+ (__p2)=x
+ x=(r1)
+ (r0)=x
+ x=(r2)
+ (r1)=x
+ x=(r3)
+ (r2)=x
+ x=(r0)
+ (__p1)=x
+__strncmp1:
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=0
+ (r0)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p3)
+ (r0)=x
+ x=(r1)
+ x-=(r0)
+ (__tmp)=x
+ x=__tmp+2
+ a=0x80
+ a&=(x)
+ jnz L241
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=0
+ (r0)=x
+ ret
+L241:
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p1)
+ y=r0
+ a=(x)
+ (y)=a
+ y++
+ a=0
+ (y)=a
+ y++
+ (y)=a
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p2)
+ y=r0
+ a=(x)
+ (y)=a
+ y++
+ a=0
+ (y)=a
+ y++
+ (y)=a
+ x=(r1)
+ x-=(r0)
+ jz L242
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=1
+ (r0)=x
+ ret
+L242:
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p1)
+ y=r0
+ a=(x)
+ (y)=a
+ y++
+ a=0
+ (y)=a
+ y++
+ (y)=a
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=NULL
+ (r0)=x
+ x=(r1)
+ x-=(r0)
+ jnz L243
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=0
+ (r0)=x
+ ret
+L243:
+ x=(__p1)
+ x++
+ (__p1)=x
+ x=(__p2)
+ x++
+ (__p2)=x
+ x=(__p3)
+ x--
+ (__p3)=x
+ jmp __strncmp1
+strcpy:
+ x=(r0)
+ (__p2)=x
+ x=(r0)
+ (__tmp)=x
+ x=(r1)
+ (r0)=x
+ x=(__tmp)
+ (r1)=x
+ x=(r0)
+ (__p1)=x
+__strcpy1:
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p1)
+ y=r0
+ a=(x)
+ (y)=a
+ y++
+ a=0
+ (y)=a
+ y++
+ (y)=a
+ x=(__p2)
+ y=r0
+ a=(y)
+ (x)=a
+ x=(r0)
+ (__p3)=x
+ x=(__p1)
+ x++
+ (__p1)=x
+ x=(__p2)
+ x++
+ (__p2)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p3)
+ (r0)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=NULL
+ (r0)=x
+ x=(r1)
+ x-=(r0)
+ jnz __strcpy1
+ ret
+strncpy:
+ x=(r0)
+ (__p3)=x
+ x=(r1)
+ (r0)=x
+ x=(r2)
+ (r1)=x
+ x=(r3)
+ (r2)=x
+ x=(r0)
+ (__p2)=x
+ x=(r1)
+ (r0)=x
+ x=(r2)
+ (r1)=x
+ x=(r3)
+ (r2)=x
+ x=(r0)
+ (__p1)=x
+__strncpy1:
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=0
+ (r0)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p3)
+ (r0)=x
+ x=(r1)
+ x-=(r0)
+ (__tmp)=x
+ x=__tmp+2
+ a=0x80
+ a&=(x)
+ jnz L259
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=NULL
+ (r0)=x
+ x=(__p2)
+ y=r0
+ a=(y)
+ (x)=a
+ ret
+L259:
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p1)
+ y=r0
+ a=(x)
+ (y)=a
+ y++
+ a=0
+ (y)=a
+ y++
+ (y)=a
+ x=(__p2)
+ y=r0
+ a=(y)
+ (x)=a
+ x=(r0)
+ (__p4)=x
+ x=(__p1)
+ x++
+ (__p1)=x
+ x=(__p2)
+ x++
+ (__p2)=x
+ x=(__p3)
+ x--
+ (__p3)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p4)
+ (r0)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=NULL
+ (r0)=x
+ x=(r1)
+ x-=(r0)
+ jnz __strncpy1
+ ret
+strcat:
+ x=(r0)
+ (__p2)=x
+ x=(r0)
+ (__tmp)=x
+ x=(r1)
+ (r0)=x
+ x=(__tmp)
+ (r1)=x
+ x=(r0)
+ (__p1)=x
+__strcat1:
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p2)
+ y=r0
+ a=(x)
+ (y)=a
+ y++
+ a=0
+ (y)=a
+ y++
+ (y)=a
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=NULL
+ (r0)=x
+ x=(r1)
+ x-=(r0)
+ jz L269
+ x=(__p2)
+ x++
+ (__p2)=x
+ jmp __strcat1
+L269:
+__strcat2:
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p1)
+ y=r0
+ a=(x)
+ (y)=a
+ y++
+ a=0
+ (y)=a
+ y++
+ (y)=a
+ x=(__p2)
+ y=r0
+ a=(y)
+ (x)=a
+ x=(r0)
+ (__p3)=x
+ x=(__p1)
+ x++
+ (__p1)=x
+ x=(__p2)
+ x++
+ (__p2)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p3)
+ (r0)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=NULL
+ (r0)=x
+ x=(r1)
+ x-=(r0)
+ jnz __strcat2
+ ret
+strstr:
+ x=(r0)
+ (__p2)=x
+ x=(r0)
+ (__tmp)=x
+ x=(r1)
+ (r0)=x
+ x=(__tmp)
+ (r1)=x
+ x=(r0)
+ (__p1)=x
+__strstr1:
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p1)
+ y=r0
+ a=(x)
+ (y)=a
+ y++
+ a=0
+ (y)=a
+ y++
+ (y)=a
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=NULL
+ (r0)=x
+ x=(r1)
+ x-=(r0)
+ jnz L279
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=NULL
+ (r0)=x
+ ret
+L279:
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p1)
+ (r0)=x
+ x=(r0)
+ (__p3)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p2)
+ (r0)=x
+ x=(r0)
+ (__p4)=x
+__strstr2:
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p3)
+ y=r0
+ a=(x)
+ (y)=a
+ y++
+ a=0
+ (y)=a
+ y++
+ (y)=a
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p4)
+ y=r0
+ a=(x)
+ (y)=a
+ y++
+ a=0
+ (y)=a
+ y++
+ (y)=a
+ x=(r1)
+ x-=(r0)
+ jz L283
+ x=(__p1)
+ x++
+ (__p1)=x
+ jmp __strstr1
+L283:
+ x=(__p3)
+ x++
+ (__p3)=x
+ x=(__p4)
+ x++
+ (__p4)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p4)
+ y=r0
+ a=(x)
+ (y)=a
+ y++
+ a=0
+ (y)=a
+ y++
+ (y)=a
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=NULL
+ (r0)=x
+ x=(r1)
+ x-=(r0)
+ jnz __strstr2
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p1)
+ (r0)=x
+ ret
+strlen:
+ x=(r0)
+ (__p1)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=0
+ (r0)=x
+ x=(r0)
+ (__p2)=x
+__strlen1:
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p1)
+ y=r0
+ a=(x)
+ (y)=a
+ y++
+ a=0
+ (y)=a
+ y++
+ (y)=a
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=NULL
+ (r0)=x
+ x=(r1)
+ x-=(r0)
+ jnz L292
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p2)
+ (r0)=x
+ ret
+L292:
+ x=(__p1)
+ x++
+ (__p1)=x
+ x=(__p2)
+ x++
+ (__p2)=x
+ jmp __strlen1
+atoi:
+ x=(r0)
+ (__p2)=x
+ x=(r0)
+ (__tmp)=x
+ x=(r1)
+ (r0)=x
+ x=(__tmp)
+ (r1)=x
+ x=(r0)
+ (__p1)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=1
+ (r0)=x
+ x=(r0)
+ (__p3)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=0
+ (r0)=x
+ x=(r0)
+ (__p4)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p1)
+ y=r0
+ a=(x)
+ (y)=a
+ y++
+ a=0
+ (y)=a
+ y++
+ (y)=a
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=PLUS
+ (r0)=x
+ x=(r1)
+ x-=(r0)
+ jnz L299
+ x=(__p1)
+ x++
+ (__p1)=x
+L299:
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p1)
+ y=r0
+ a=(x)
+ (y)=a
+ y++
+ a=0
+ (y)=a
+ y++
+ (y)=a
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=MINUS
+ (r0)=x
+ x=(r1)
+ x-=(r0)
+ jnz L300
+ x=(__p1)
+ x++
+ (__p1)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=-1
+ (r0)=x
+ x=(r0)
+ (__p3)=x
+L300:
+__atoi1:
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=0
+ (r0)=x
+ x=(r0)
+ (__p5)=x
+__atoi2:
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p5)
+ (r0)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p2)
+ (r0)=x
+ x=(r1)
+ x-=(r0)
+ (__tmp)=x
+ x=__tmp+2
+ a=0x80
+ a&=(x)
+ jnz L304
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p3)
+ (r0)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p4)
+ (r0)=x
+ call mul
+ x=(__ans)
+ (r0)=x
+ ret
+L304:
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=S2
+ x+=(__p5)
+ y=r0
+ a=(x)
+ (y)=a
+ a=0
+ y++
+ (y)=a
+ y++
+ (y)=a
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p1)
+ y=r0
+ a=(x)
+ (y)=a
+ y++
+ a=0
+ (y)=a
+ y++
+ (y)=a
+ x=(r1)
+ x-=(r0)
+ jz L305
+ x=(__p5)
+ x++
+ (__p5)=x
+ jmp __atoi2
+L305:
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p4)
+ (r0)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p2)
+ (r0)=x
+ call umul
+ x=(__ans)
+ (r0)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p5)
+ (r0)=x
+ x=(r1)
+ x+=(r0)
+ (r0)=x
+ x=(r0)
+ (__p4)=x
+ x=(__p1)
+ x++
+ (__p1)=x
+ jmp __atoi1
+itoa:
+ x=(r0)
+ (__p2)=x
+ x=(r0)
+ (__tmp)=x
+ x=(r1)
+ (r0)=x
+ x=(__tmp)
+ (r1)=x
+ x=(r0)
+ (__p1)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p1)
+ (r0)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=0
+ (r0)=x
+ x=(r1)
+ x-=(r0)
+ jnz L311
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=S3
+ (r0)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=__nbuf
+ (r0)=x
+ call strcpy
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=__nbuf
+ (r0)=x
+ ret
+L311:
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=__nbuf
+ (r0)=x
+ x=(r0)
+ (__p3)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=1
+ (r0)=x
+ x=(r0)
+ (__p4)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p1)
+ (r0)=x
+ x=(r0)
+ (__p5)=x
+__itoa1:
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p5)
+ (r0)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p2)
+ (r0)=x
+ x=(r1)
+ x-=(r0)
+ (__tmp)=x
+ x=__tmp+2
+ a=0x80
+ a&=(x)
+ jnz __itoa2
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p5)
+ (r0)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p2)
+ (r0)=x
+ call udiv
+ x=(__ans)
+ (r0)=x
+ x=(r0)
+ (__p5)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p4)
+ (r0)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p2)
+ (r0)=x
+ call umul
+ x=(__ans)
+ (r0)=x
+ x=(r0)
+ (__p4)=x
+ jmp __itoa1
+__itoa2:
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p1)
+ (r0)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p4)
+ (r0)=x
+ call udiv
+ x=(__ans)
+ (r0)=x
+ x=(r0)
+ (__p5)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p4)
+ (r0)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p5)
+ (r0)=x
+ call umul
+ x=(__ans)
+ (r0)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p1)
+ (r0)=x
+ x=(r0)
+ (__tmp)=x
+ x=(r1)
+ (r0)=x
+ x=(__tmp)
+ (r1)=x
+ x=(r1)
+ x-=(r0)
+ (r0)=x
+ x=(r0)
+ (__p1)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=S4
+ x+=(__p5)
+ y=r0
+ a=(x)
+ (y)=a
+ a=0
+ y++
+ (y)=a
+ y++
+ (y)=a
+ x=(__p3)
+ y=r0
+ a=(y)
+ (x)=a
+ x=(__p3)
+ x++
+ (__p3)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p4)
+ (r0)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p2)
+ (r0)=x
+ call udiv
+ x=(__ans)
+ (r0)=x
+ x=(r0)
+ (__p4)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p4)
+ (r0)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=0
+ (r0)=x
+ x=(r1)
+ x-=(r0)
+ jnz __itoa2
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=NULL
+ (r0)=x
+ x=(__p3)
+ y=r0
+ a=(y)
+ (x)=a
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=__nbuf
+ (r0)=x
+ ret
+bin:
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=2
+ (r0)=x
+ call itoa
+ ret
+oct:
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=8
+ (r0)=x
+ call itoa
+ ret
+dec:
+ x=(r0)
+ (__p1)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p1)
+ (r0)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=0
+ (r0)=x
+ x=(r1)
+ x-=(r0)
+ (__tmp)=x
+ x=__tmp+2
+ a=0x80
+ a&=(x)
+ jnz L335
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p1)
+ (r0)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=10
+ (r0)=x
+ call itoa
+ ret
+L335:
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p1)
+ (r0)=x
+ x=0
+ x-=(r0)
+ (r0)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=10
+ (r0)=x
+ call itoa
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=MINUS
+ (r0)=x
+ x=__sign
+ y=r0
+ a=(y)
+ (x)=a
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=__sign
+ (r0)=x
+ ret
+hex:
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=16
+ (r0)=x
+ call itoa
+ ret
+restore:
+ x=(r0)
+ (read_p)=x
+ ret
+read:
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(read_p)
+ (r0)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=3
+ (r0)=x
+ x=(r1)
+ x+=(r0)
+ (r0)=x
+ x=(r0)
+ (read_p)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=-1+-1+-1
+ x+=(read_p)
+ y=r0
+ a=(x)
+ (y)=a
+ x++
+ y++
+ a=(x)
+ (y)=a
+ x++
+ y++
+ a=(x)
+ (y)=a
+ ret
+abs:
+ x=(r0)
+ (__p1)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p1)
+ (r0)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=0
+ (r0)=x
+ x=(r1)
+ x-=(r0)
+ (__tmp)=x
+ x=__tmp+2
+ a=0x80
+ a&=(x)
+ jnz L349
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p1)
+ (r0)=x
+ ret
+L349:
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=0
+ (r0)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(__p1)
+ (r0)=x
+ x=(r1)
+ x-=(r0)
+ (r0)=x
+ ret
+__000:
+ int 0
+__001:
+ int 1
+__0x800000:
+ int 0x800000
+__NaN:
+ int NaN
+main:
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=0
+ (r0)=x
+ x=(r0)
  (i)=x
- jnz loop
-end:
- jmp end
-
-// variable
-p:    int 0
-i:    int 0
-_001: int 1
-
-// string
-hello:
- byte 'h'
- byte 'e'
- byte 'l'
- byte 'l'
- byte 'o'
- byte 32
- byte 'w'
- byte 'o'
- byte 'r'
- byte 'l'
- byte 'd'
- byte 10
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=10
+ (r0)=x
+ x=(r0)
+ (i+3)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=1
+ (r0)=x
+ x=(r0)
+ (i+6)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=$+16
+ (r0)=x
+ x=(r0)
+ (i+9)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(i)
+ (r0)=x
+ call printd
+ call nl
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(i)
+ (r0)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(i+3)
+ (r0)=x
+ x=(r1)
+ x-=(r0)
+ jz $+125
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(i)
+ (r0)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(i+6)
+ (r0)=x
+ x=(r1)
+ x+=(r0)
+ (r0)=x
+ x=(r0)
+ (i)=x
+ x=(r2)
+ (r3)=x
+ x=(r1)
+ (r2)=x
+ x=(r0)
+ (r1)=x
+ x=(i+9)
+ (r0)=x
+ x=(r0)
+ jmp (x)
+ ret
+  align 8
+S1:
+  byte 115
+  byte 116
+  byte 100
+  byte 105
+  byte 111
+  byte 46
+  byte 114
+  byte 104
+  byte 0
+S2:
+  byte 48
+  byte 49
+  byte 50
+  byte 51
+  byte 52
+  byte 53
+  byte 54
+  byte 55
+  byte 56
+  byte 57
+  byte 97
+  byte 98
+  byte 99
+  byte 100
+  byte 101
+  byte 102
+  byte 0
+S3:
+  byte 48
+  byte 0
+S4:
+  byte 48
+  byte 49
+  byte 50
+  byte 51
+  byte 52
+  byte 53
+  byte 54
+  byte 55
+  byte 56
+  byte 57
+  byte 97
+  byte 98
+  byte 99
+  byte 100
+  byte 101
+  byte 102
+  byte 0
+  align 8
+__sign: memory 1
+__nbuf: memory 64
+__p0: memory 12
+__p1: memory 3
+__p2: memory 3
+__p3: memory 3
+__p4: memory 3
+__p5: memory 3
+__p6: memory 3
+__p7: memory 3
+__t: memory 3
+__u: memory 3
+read_p: memory 3
+__stack: memory STACK_SIZE*3
+__stack_top: memory 3
+r0: memory 3
+r1: memory 3
+r2: memory 3
+r3: memory 3
+__tmp: memory 3
+__ans: memory 3
+__sgn: memory 3
+i: memory 12
