@@ -18,19 +18,19 @@
 
 // パス１定義データ （宣言文の定義）
 char*  pass1[] = {
-  " int \\#(\\),\\#(\\),\\#(\\),\\#(\\)", "\\1: memory \\2*3\n\\3: memory \\4*3\n\\5: memory \\6*3\n\\7: memory \\8*3\n",
-  " int \\#(\\),\\#(\\),\\#(\\)",         "\\1: memory \\2*3\n\\3: memory \\4*3\n\\5: memory \\6*3\n",
-  " int \\#(\\),\\#(\\)",                 "\\1: memory \\2*3\n\\3: memory \\4*3\n",
-  " int \\#(\\)",                         "\\1: memory \\2*3\n",
+  " long \\#(\\),\\#(\\),\\#(\\),\\#(\\)", "\\1: memory \\2*3\n\\3: memory \\4*3\n\\5: memory \\6*3\n\\7: memory \\8*3\n",
+  " long \\#(\\),\\#(\\),\\#(\\)",         "\\1: memory \\2*3\n\\3: memory \\4*3\n\\5: memory \\6*3\n",
+  " long \\#(\\),\\#(\\)",                 "\\1: memory \\2*3\n\\3: memory \\4*3\n",
+  " long \\#(\\)",                         "\\1: memory \\2*3\n",
 
-  " int \\#,\\#,\\#,\\#,\\#,\\#,\\#,\\#", "\\1: memory 3\n\\2: memory 3\n\\3: memory 3\n\\4: memory 3\n\\5: memory 3\n\\6: memory 3\n\\7: memory 3\n\\8: memory 3\n",
-  " int \\#,\\#,\\#,\\#,\\#,\\#,\\#",     "\\1: memory 3\n\\2: memory 3\n\\3: memory 3\n\\4: memory 3\n\\5: memory 3\n\\6: memory 3\n\\7: memory 3\n",
-  " int \\#,\\#,\\#,\\#,\\#,\\#",         "\\1: memory 3\n\\2: memory 3\n\\3: memory 3\n\\4: memory 3\n\\5: memory 3\n\\6: memory 3\n",
-  " int \\#,\\#,\\#,\\#,\\#",             "\\1: memory 3\n\\2: memory 3\n\\3: memory 3\n\\4: memory 3\n\\5: memory 3\n",
-  " int \\#,\\#,\\#,\\#",                 "\\1: memory 3\n\\2: memory 3\n\\3: memory 3\n\\4: memory 3\n",
-  " int \\#,\\#,\\#",                     "\\1: memory 3\n\\2: memory 3\n\\3: memory 3\n",
-  " int \\#,\\#",                         "\\1: memory 3\n\\2: memory 3\n",
-  " int \\#",                             "\\1: memory 3\n",
+  " long \\#,\\#,\\#,\\#,\\#,\\#,\\#,\\#", "\\1: memory 3\n\\2: memory 3\n\\3: memory 3\n\\4: memory 3\n\\5: memory 3\n\\6: memory 3\n\\7: memory 3\n\\8: memory 3\n",
+  " long \\#,\\#,\\#,\\#,\\#,\\#,\\#",     "\\1: memory 3\n\\2: memory 3\n\\3: memory 3\n\\4: memory 3\n\\5: memory 3\n\\6: memory 3\n\\7: memory 3\n",
+  " long \\#,\\#,\\#,\\#,\\#,\\#",         "\\1: memory 3\n\\2: memory 3\n\\3: memory 3\n\\4: memory 3\n\\5: memory 3\n\\6: memory 3\n",
+  " long \\#,\\#,\\#,\\#,\\#",             "\\1: memory 3\n\\2: memory 3\n\\3: memory 3\n\\4: memory 3\n\\5: memory 3\n",
+  " long \\#,\\#,\\#,\\#",                 "\\1: memory 3\n\\2: memory 3\n\\3: memory 3\n\\4: memory 3\n",
+  " long \\#,\\#,\\#",                     "\\1: memory 3\n\\2: memory 3\n\\3: memory 3\n",
+  " long \\#,\\#",                         "\\1: memory 3\n\\2: memory 3\n",
+  " long \\#",                             "\\1: memory 3\n",
 
   " char \\$(\\),\\$(\\),\\$(\\),\\$(\\)", "\\1: memory \\2\n\\3: memory \\4\n\\5: memory \\6\n\\7: memory \\8\n",
   " char \\$(\\),\\$(\\),\\$(\\)",         "\\1: memory \\2\n\\3: memory \\4\n\\5: memory \\6\n",
@@ -81,7 +81,7 @@ char*  pass3[] = {
   "\\:",    "\\1:\n",
 
 // 宣言文は無視する
-  " int \\",      "",
+  " long \\",      "",
   " char \\",     "",
   " count \\",    "",
   " const \\ \\", "/\\1: = \\2/\n",
@@ -144,7 +144,7 @@ char* codegen[] = {
 " udiv", " call udiv\n x=(__ans)\n (r0)=x\n",
 " neg", " x=0\n x-=(r0)\n (r0)=x\n",
 " not", " x=0xffffff\n x-=(r0)\n (r0)=x\n",
-" mod", " call mod\n x=(r1)\n (r0)=x\n",
+" mod", " call udiv\n x=(r1)\n (r0)=x\n",
 " swap", " x=(r0)\n (__tmp)=x\n x=(r1)\n (r0)=x\n x=(__tmp)\n (r1)=x\n",
 " push", " x=(r2)\n (r3)=x\n x=(r1)\n (r2)=x\n x=(r0)\n (r1)=x\n",
 " pop", " x=(r1)\n (r0)=x\n x=(r2)\n (r1)=x\n x=(r3)\n (r2)=x\n",
@@ -158,6 +158,8 @@ char* codegen[] = {
 " end", " ret\n",
 " jmp@", " x=(r0)\n jmp (x)\n",
 " call@", " x=$+10\n push x\n x=(r0)\n jmp (x)\n",
+" ->@\\(\\)", " x=&\\2\n (arg0)=x\n x=\\1\n x+=(r0)\n y=r0\n a=(x)\n (y)=a\n x++\n y++\n a=(x)\n (y)=a\n x++\n y++\n a=(x)\n (y)=a\n x=$+10\n push x\n x=(r0)\n jmp (x)\n",
+" ->@\\", " x=\\1\n x+=(r0)\n y=r0\n a=(x)\n (y)=a\n x++\n y++\n a=(x)\n (y)=a\n x++\n y++\n a=(x)\n (y)=a\n x=$+10\n push x\n x=(r0)\n jmp (x)\n",
 " ->\\#=", " x=\\1\n x+=(r0)\n y=r1\n a=(y)\n (x)=a\n x++\n y++\n a=(y)\n (x)=a\n x++\n y++\n a=(y)\n (x)=a\n",
 " ->\\$=", " x=\\1\n x+=(r0)\n y=r1\n a=(y)\n (x)=a\n",
 " ->\\#", " x=\\1\n x+=(r0)\n y=r0\n a=(x)\n (y)=a\n x++\n y++\n a=(x)\n (y)=a\n x++\n y++\n a=(x)\n (y)=a\n",
@@ -193,7 +195,7 @@ char* codegen[] = {
 " (\\)$=", " x=(\\1)\n y=r0\n a=(y)\n (x)=a\n",
 " \\$=", " x=\\1\n y=r0\n a=(y)\n (x)=a\n",
 " data\\", " int \\1\n",
-" @\\(\\)", " x=$+18\n push x\n x=\\2\n (r0)=x\n x=(\\1)\n jmp (x)\n",
+" @\\(\\)", " x=$+18\n push x\n x=\\2\n (arg0)=x\n x=(\\1)\n jmp (x)\n",
 " @\\", " x=$+10\n push x\n x=(\\1)\n jmp (x)\n",
 " \\", " call \\1\n",
 
@@ -277,9 +279,9 @@ int main( int argc, char* argv[] ){
   /* 出力ファイル（アセンブラソース）の生成 */
   if( ( hOutFile = fopen( AsmFile, "w") ) != NULL ){
     catFile( InFile );  // プログラム
-    fprintf( hOutFile, "  align 8\n" );
+//    fprintf( hOutFile, "  align 8\n" );
     catFile( StrFile );  // 文字列
-    fprintf( hOutFile, "  align 8\n" );
+//    fprintf( hOutFile, "  align 8\n" );
     catFile( VarFile );  // 変数
     fclose( hOutFile );
   }
@@ -413,28 +415,28 @@ void compile_s(){
       else if( strncmp( s, "long ", 5 ) == 0 ){
         for( s += 5; *s == ' ' || *s == '\t'; s++ ) {}    // 空白を読み飛ばす
         if( ( t = strstr( s, "#" ) ) != NULL ) *t = '\0';
-        fprintf( hOutFile, " const_plus %s.%s 8\n", sname, s );
+        fprintf( hOutFile, " const_plus %s.%s SIZEOF_LONG\n", sname, s );
       }
 
       // int型
       else  if( strncmp( s, "int ", 4 ) == 0 ){
         for( s += 4; *s == ' ' || *s == '\t'; s++ ) {}    // 空白を読み飛ばす
         if( ( t = strstr( s, "!" ) ) != NULL ) *t = '\0';
-        fprintf( hOutFile, " const_plus %s.%s 4\n", sname, s );
+        fprintf( hOutFile, " const_plus %s.%s SIZEOF_INT\n", sname, s );
       }
 
       // short型
       else   if( strncmp( s, "short ", 6 ) == 0 ){
         for( s += 6; *s == ' ' || *s == '\t'; s++ ) {}    // 空白を読み飛ばす
         if( ( t = strstr( s, "%" ) ) != NULL ) *t = '\0';
-        fprintf( hOutFile, " const_plus %s.%s 2\n", sname, s );
+        fprintf( hOutFile, " const_plus %s.%s SIZEOF_SHORT\n", sname, s );
       }
 
       // char型
       else  if( strncmp( s, "char ", 5 ) == 0 ){
         for( s += 5; *s == ' ' || *s == '\t'; s++ ) {}    // 空白を読み飛ばす
         if( ( t = strstr( s, "$" ) ) != NULL ) *t = '\0';
-        fprintf( hOutFile, " const_plus %s.%s 1\n", sname, s );
+        fprintf( hOutFile, " const_plus %s.%s SIZEOF_CHAR\n", sname, s );
       }
 
       // 終了

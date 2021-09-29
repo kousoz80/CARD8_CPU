@@ -269,7 +269,7 @@ public void exec_one_cycle(){
     clock =  Integer.parseInt( clock_field.getText() );
 
     // opコード表示
-    message_area.setText(&quot;operation:\n&quot;+hex6(reg_pc)+&quot; : &quot;+opcode[ mem[ reg_pc ] ]+&quot;\n\n&quot; );
+    message_area.setText(&quot; OP CODE:\n&quot;+hex6(reg_pc)+&quot; : &quot;+opcode[ mem[ reg_pc ] ]+&quot;\n\n&quot; );
 
     // 命令コードをフェッチ
     ins = mem[ reg_pc++ ];
@@ -2222,7 +2222,7 @@ class keyinput_listener implements DocumentListener{
       if( allow &amp;&amp; (s = cmd_line.getText()).length() &gt; 0 ){
         allow = false;
         KeyCode = (int)(byte)s.charAt(0);
-        if( KeyCode ==10 ) KeyCode = 13;
+        if( KeyCode ==13 ) KeyCode = 10;
         allow = true;
          }
       }
@@ -2481,7 +2481,7 @@ disp Idisp;
   disp(){
  setOpaque( true );
  setName(  &quot;disp&quot; );
- setFont( new Font( &quot;Dialog&quot;, 0, 12 ));
+ setFont( new Font( &quot;Dialog&quot;, 0, 20 ));
  setForeground( new Color(  51, 51, 51 ));
  setBackground( new Color(  255, 255, 255 ));
  setText( &quot;&quot; );
@@ -2541,7 +2541,7 @@ cmd_line Icmd_line;
 192
 192
 xxscale=1
-TEXTAREA;disp;null;1;35;713;491;51;51;51;255;255;255;Dialog;12;1;1;1;JTextArea;
+TEXTAREA;disp;null;1;35;713;491;51;51;51;255;255;255;Dialog;20;1;1;1;JTextArea;
 TEXTFIELD;cmd_line;null;0;0;400;30;51;51;51;255;255;255;Dialog;12;1;1;1;JTextField;
 </レイアウト>
 </aobject>
