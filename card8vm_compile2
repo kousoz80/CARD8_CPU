@@ -1,8 +1,0 @@
-#!/bin/sh
-./bin/card8vm_orc stdio.rh test.r
-java -jar jar/card8vm_asm.jar -list -label asm.s a.out
- rm __tmp1
- rm __tmp2
- rm __str
- rm __var
-

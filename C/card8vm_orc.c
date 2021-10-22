@@ -11,6 +11,8 @@
   ・ソースファイル名は "asm.s"となる
   ・オリジナルとは若干言語仕様が異なる
 
+    コンパイル: gcc -o card8vm_orc card8vm_orc.c 
+
 */
 
 #include <stdio.h>

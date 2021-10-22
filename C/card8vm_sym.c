@@ -1,54 +1,85 @@
-// "card8vm_sym.c" CARD8 CPU用仮想マシンのエミュレータのC言語による実装 ver 1.0
+// "card8vm_sym.c" CARD8エミュレータのC言語による実装 ver 1.0
+// コンパイル: gcc -ptherad -o card8vm_sym card8vm_sym.c 
 
 #include <stdio.h>
-#define MEM_SIZE 65536
+#include <pthread.h>
+#include <termios.h>
+#include <errno.h>
+#include <unistd.h>
+#include <fcntl.h>
+
+
+#define MEM_SIZE	0x1000000
+
+// I/Oポート
+#define KEY_CODE	0xfffffd
+#define PRT_STROBE	0xfffffe
+#define PRT_DATA	0xffffff
+
+
+int is_break, KeyCode;
 
 // 仮想マシンのレジスタセット
-int pc;	// PC: プログラムカウンタ
-int x;	// X: インデックスレジスタX
-int y;	// Y: インデックスレジスタY
-int a;	// A: アキュムレータ
-int cf;	// CF: キャリーフラグ
-int zf;	// ZF: ゼロフラグ
+int reg_pc;	// PC: プログラムカウンタ
+int reg_sp;	// SP: スタックポインタ
+int reg_x;	// X:  インデックスレジスタX
+int reg_y;	// Y:  インデックスレジスタY
+int reg_a;	// A:  アキュムレータ
+int reg_cf;	// CF: キャリーフラグ
+int reg_zf;	// ZF: ゼロフラグ
 
 // メモリ
-int mem[MEM_SIZE];
+static int mem[MEM_SIZE];
 
 // 仮想マシンの命令セット
 enum card8vm_ins {
- HLT,	// hlt;			停止する
- LXI,	// lxi xxxx;	Xレジスタにxxxxの値をセットする
- LDX,	// ldx xxxx;	Xレジスタにxxxx番地の内容を転送する
- ADX,	// adx xxxx;	Xレジスタにxxxx番地の内容を加算する
- SBX,	// sbx xxxx;	Xレジスタからxxxx番地の内容を減算する
- STX,	// stx xxxx;	Xレジスタの内容をxxxx番地に転送する
- LAI,	// lai xx;		Aレジスタにxxの値をセットする
- LD,	// ld;			AレジスタにXレジスタが示す番地の内容を転送する
- ST,	// st;			Xレジスタが示す番地にAレジスタの内容を転送する
- ADC,	// adc;			AレジスタにXレジスタが示す番地の内容をキャリー付き加算する
- SBC,	// sbc;			AレジスタからXレジスタが示す番地の内容をキャリー付き減算する
- AND,	// and;			AレジスタにXレジスタが示す番地の内容をAND演算する(CFは0にする)
- OR,	// or;			AレジスタにXレジスタが示す番地の内容をOR演算する(CFは1にする)
- ROR,	// ror;			AレジスタのビットをCFを含めて右回転させる
- ROL,	// rol;			AレジスタのビットをCFを含めて左回転させる
- JMP,	// jmp xxxx;	xxxx番地にジャンプする
- JZ,	// jz xxxx;		ZFが１のときxxxx番地にジャンプする
- JNZ,	// jnz xxxx;	ZFが0のときxxxx番地にジャンプする
- JC,	// jc xxxx;		CFが１のときxxxx番地にジャンプする
- JNC,	// jnc xxxx;	CFが0のときxxxx番地にジャンプする
- JMPX,	// jmpx;		Xレジスタが示す番地にジャンプする
- JMPY,	// jmpy;		Yレジスタが示す番地にジャンプする
- LYI,	// lyi xxxx;	Yレジスタにxxxxの値をセットする
- LDY,	// ldy xxxx;	Yレジスタにxxxx番地の内容を転送する
- ADY,	// ady xxxx;	Yレジスタにxxxx番地の内容を加算する
- SBY,	// sby xxxx;	Yレジスタからxxxx番地の内容を減算する
- STY,	// sty xxxx;	Yレジスタの内容をxxxx番地に転送する
- LD_Y,	// ld_y;		AレジスタにYレジスタが示す番地の内容を転送する
- ST_Y,	// st_y;		Yレジスタが示す番地にAレジスタの内容を転送する
- ADC_Y,	// adc_y;		AレジスタにYレジスタが示す番地の内容をキャリー付き加算する
- SBC_Y,	// sbc_y;		AレジスタからYレジスタが示す番地の内容をキャリー付き減算する
- AND_Y,	// and_y;		AレジスタにYレジスタが示す番地の内容をAND演算する(CFは0にする)
- OR_Y,	// or_y;		AレジスタにYレジスタが示す番地の内容をOR演算する(CFは1にする)
+HLT,	// hlt;	停止する
+LXI,	// lxi xxxx;	Xレジスタにxxxxの値をセットする
+LDX,	// ldx xxxx;	Xレジスタにxxxx番地の内容を転送する
+ADX,	// adx xxxx;	Xレジスタにxxxx番地の内容を加算する
+SBX,	// sbx xxxx;	Xレジスタからxxxx番地の内容を減算する
+STX,	// stx xxxx;	Xレジスタの内容をxxxx番地に転送する
+LAI,	// lai xx;	Aレジスタにxxの値をセットする
+LD,		// ld;	AレジスタにXレジスタが示す番地の内容を転送する
+ST,		// st;	Xレジスタが示す番地にAレジスタの内容を転送する
+ADC,	// adc;	AレジスタにXレジスタが示す番地の内容をキャリー付き加算する
+SBB,	// sbb;	AレジスタからXレジスタが示す番地の内容をボロー(キャリーの反転)付き減算する
+AND,	// and;	AレジスタにXレジスタが示す番地の内容をAND演算する(CFは0にする)
+OR,		// or;	AレジスタにXレジスタが示す番地の内容をOR演算する(CFは1にする)
+RORX,	// rorx;	Xレジスタが示す番地の内容のビットをCFを含めて右回転させる
+ROLX,	// rolx;	Xレジスタが示す番地の内容のビットをCFを含めて左回転させる
+JMP,	// jmp xxxx;	xxxx番地にジャンプする
+JZ,		// jz xxxx;	ZFが１のときxxxx番地にジャンプする
+JNZ,	// jnz xxxx;	ZFが0のときxxxx番地にジャンプする
+JC,		// jc xxxx;	CFが１のときxxxx番地にジャンプする
+JNC,	// jnc xxxx;	CFが0のときxxxx番地にジャンプする
+JMPX,	// jmpx;	Xレジスタが示す番地にジャンプする
+JMPY,	// jmpy;	Yレジスタが示す番地にジャンプする
+LYI,	// lyi xxxx;	Yレジスタにxxxxの値をセットする
+LDY,	// ldy xxxx;	Yレジスタにxxxx番地の内容を転送する
+ADY,	// ady xxxx;	Yレジスタにxxxx番地の内容を加算する
+SBY,	// sby xxxx;	Yレジスタからxxxx番地の内容を減算する
+STY,	// sty xxxx;	Yレジスタの内容をxxxx番地に転送する
+LD_Y,	// ld_y;	AレジスタにYレジスタが示す番地の内容を転送する
+ST_Y,	// st_y;	Yレジスタが示す番地にAレジスタの内容を転送する
+ADC_Y,	// adc_y;	AレジスタにYレジスタが示す番地の内容をキャリー付き加算する
+SBB_Y,	// sbc_y;	AレジスタからYレジスタが示す番地の内容をボロー(キャリーの反転)付き減算する
+AND_Y,	// and_y;	AレジスタにYレジスタが示す番地の内容をAND演算する(CFは0にする)
+OR_Y,	// or_y;	AレジスタにYレジスタが示す番地の内容をOR演算する(CFは1にする)
+CALL,	// call xxxx;	PCレジスタの内容をスタックにプッシュしてxxxx番地にジャンプする
+RET,	// ret;	スタックにプッシュされたアドレスPCレジスタに復帰する
+PUSHA,	// push a;	Aレジスタの内容をスタックにプッシュする
+PUSHX,	// push x;	Xレジスタの内容をスタックにプッシュする 
+POPA,	// pop a;	スタックからAレジスタの内容を復帰する 
+POPX,	// pop x;	スタックからXレジスタの内容を復帰する 
+TXS,	// txs;	Xレジスタスの内容をスタックポインタに転送する 
+TSX,	// tsx;	スタックポインタの内容をXレジスタスに転送する 
+INCX,	// incx;	Xレジスタを+1する (ZFのみ変化する、CFは変化しない)
+DECX,	// decx;	Xレジスタを-1する (ZFのみ変化する、CFは変化しない)
+INCY,	// incy;	Yレジスタを+1する (ZFのみ変化する、CFは変化しない)
+DECY,	// decy;	Yレジスタを-1する (ZFのみ変化する、CFは変化しない)
+RORY,	// rory;	Yレジスタが示す番地の内容のビットをCFを含めて右回転させる
+ROLY	// roly;	Yレジスタが示す番地の内容のビットをCFを含めて左回転させる
 
 };
 
@@ -57,6 +88,8 @@ enum card8vm_ins {
 int load_prog( char* fname ){
   FILE* fp;
   int adrs, data;
+
+printf("load prog file\r\n");
 
   // ファイルがない場合はエラー
 if( ( fp = fopen( fname, "r" ) ) == NULL ){
@@ -70,40 +103,55 @@ if( ( fp = fopen( fname, "r" ) ) == NULL ){
     mem[ adrs ] = data;
   }
   fclose( fp );
+
+printf("load prog file end\r\n");
+
   return 0;
 }
 
 
-// レジスタ表示
-void print_regs(){
-  printf( "pc=0x%06x, x=0x%06x, y=0x%06x, a=0x%02x, cf=%d, zf=%d\n", pc, x, y, a, cf, zf ); 
+// 1文字取得
+int getch(){
+  struct termios oldt, newt;
+  int ch;
+  int oldf;
+
+  tcgetattr(STDIN_FILENO, &oldt);
+  newt = oldt;
+  newt.c_lflag &= ~(ICANON | ECHO);
+  tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+  oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+  fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+  ch = getchar();
+  tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+  fcntl(STDIN_FILENO, F_SETFL, oldf);
+  return ch == EOF? 0 : ch;
 }
 
 
-// メイン
-void main( int argc, char** argv ){
+// I/O同期処理
+void io_sync(){
+
+if( KeyCode != 0 ){
+ mem[KEY_CODE] = KeyCode;
+ KeyCode = 0;
+}
+if( mem[PRT_STROBE] != 0 ){
+  int c;
+  mem[PRT_STROBE] = 0;
+  c = mem[PRT_DATA];
+  putchar(c);
+}
+
+}
+
+// 1サイクル実行
+void exec_one_cycle(){
   enum card8vm_ins ins;	// 命令コード
-  int adr;					// アドレスレジスタ
-  int tmp;					// 一時レジスタ
-  int is_break; 			// 停止フラグ 
-
-  // パラメータがあるときはプログラムファイル名とみなしてロードする
-  if( argc > 1 ) load_prog( argv[1] );
-
-  pc = 0;
-  x = 0;
-  y = 0;
-  a = 0;
-  cf = 0;
-  zf = 0;
-  mem[0] = (int)HLT;
-
-  // メインループ
-  is_break = 0;
-  while( !is_break ){
+  int adr, tmp;
 
     // 命令コードをフェッチ
-    ins = (enum card8vm_ins)mem[ pc++ ];
+    ins = mem[ reg_pc++ ];
 
     // 命令コードに応じた処理
     switch( ins ){
@@ -115,231 +163,366 @@ void main( int argc, char** argv ){
 
     // lxi xxxx;	Xレジスタにxxxxの値をセットする
     case LXI:
-      x = mem[ pc++ ] | (mem[ pc++ ] << 8) | (mem[ pc++ ] << 16);
+      reg_x = mem[ reg_pc++ ] | (mem[ reg_pc++ ] << 8) | (mem[ reg_pc++ ] << 16);
       break;
 
     // ldx xxxx;	Xレジスタにxxxx番地の内容を転送する
     case LDX:
-      adr = mem[ pc++ ] | (mem[ pc++ ] << 8) | (mem[ pc++ ] << 16);
-      x = mem[ adr++ ] | (mem[ adr++ ] << 8) | (mem[ adr ] << 16);
+      adr = mem[ reg_pc++ ] | (mem[ reg_pc++ ] << 8) | (mem[ reg_pc++ ] << 16);
+      reg_x = mem[ adr++ ] | (mem[ adr++ ] << 8) | (mem[ adr ] << 16);
       break;
 
     // adx xxxx;	Xレジスタにxxxx番地の内容を加算する
     case ADX:
-      adr = mem[ pc++ ] | (mem[ pc++ ] << 8) | (mem[ pc++ ] << 16);
+      adr = mem[ reg_pc++ ] | (mem[ reg_pc++ ] << 8) | (mem[ reg_pc++ ] << 16);
       tmp = mem[ adr++ ] | (mem[ adr++ ] << 8) | (mem[ adr ] << 16);
-      x = x + tmp;
-      zf = (x==0);
-      cf = (x >= 0x1000000);
-      x &= 0xffffff; 
+      reg_x = reg_x + tmp;
+      reg_zf = (reg_x==0? 1 : 0);
+      reg_cf = (reg_x>=0x1000000? 1 : 0);
+      reg_x &= 0xffffff; 
       break;
 
     // sbx xxxx;	Xレジスタからxxxx番地の内容を減算する
     case SBX:
-      adr = mem[ pc++] | (mem[ pc++ ] << 8) | (mem[pc++] << 16);
+      adr = mem[ reg_pc++] | (mem[ reg_pc++ ] << 8) | (mem[reg_pc++] << 16);
       tmp = mem[ adr++ ] | (mem[ adr++ ] << 8) | (mem[ adr ] << 16);
-      x = x - tmp;
-      zf = (x==0);
-      cf = (x < 0);
-      x &= 0xffffff; 
+      reg_x = reg_x - tmp;
+      reg_zf = (reg_x==0? 1 : 0);
+      reg_cf = (reg_x<0? 0 : 1);
+      reg_x &= 0xffffff; 
       break;
 
     // stx xxxx;	Xレジスタの内容をxxxx番地に転送する
     case  STX:
-      adr = mem[ pc++] | (mem[ pc++ ] << 8) | (mem[pc++] << 16);
-      mem[ adr++ ] = (x>>0)  & 0xff;
-      mem[ adr++ ] = (x>>8)  & 0xff;
-      mem[ adr ]   = (x>>16) & 0xff;
+      adr = mem[ reg_pc++] | (mem[ reg_pc++ ] << 8) | (mem[reg_pc++] << 16);
+      mem[ adr++ ] = (reg_x>>0)  & 0xff;
+      mem[ adr++ ] = (reg_x>>8)  & 0xff;
+      mem[ adr ]   = (reg_x>>16) & 0xff;
       break;
 
     // lai xx;		Aレジスタにxxの値をセットする
     case  LAI:
-      a = mem[ pc++ ];
+      reg_a = mem[ reg_pc++ ];
       break;
 
     // ld;			AレジスタにXレジスタが示す番地の内容を転送する
     case  LD:
-      a = mem[ x ];
+      reg_a = mem[ reg_x ];
       break;
 
     // st;			Xレジスタが示す番地にAレジスタの内容を転送する
     case  ST:
-      mem[ x ] = a;
+      mem[ reg_x ] = reg_a;
       break;
 
     // adc;			AレジスタにXレジスタが示す番地の内容をキャリー付き加算する
     case  ADC:
-      a = a + mem[ x ] + cf;
-      cf = (a >= 0x100);
-      a &= 0xff; 
-      zf = (a==0);
+      reg_a = reg_a + mem[ reg_x ] + reg_cf;
+      reg_cf = (reg_a>=0x100? 1 : 0);
+      reg_a &= 0xff; 
+      reg_zf = (reg_a==0? 1 : 0);
       break;
 
-    // sbc;			AレジスタからXレジスタが示す番地の内容をキャリー付き減算する
-    case  SBC:
-      a = a - mem[ x ] - cf;
-      cf = (a < 0);
-      a &= 0xff; 
-      zf = (a==0);
+    // sbb;			AレジスタからXレジスタが示す番地の内容をボロー(キャリーの反転)付き減算する
+    case  SBB:
+      reg_a = reg_a - mem[ reg_x ] - 1 + reg_cf;
+      reg_cf = (reg_a<0? 0 : 1);
+      reg_a &= 0xff; 
+      reg_zf = (reg_a==0? 1 : 0);
       break;
 
     // and;			AレジスタにXレジスタが示す番地の内容をAND演算する(CFは0にする)
     case  AND:
-      a = (a & mem[ x ]) & 0xff;
-      zf = (a==0);
-      cf = 0;
+      reg_a = (reg_a & mem[ reg_x ]) & 0xff;
+      reg_zf = (reg_a==0? 1 : 0);
+      reg_cf = 0;
       break;
 
     // or;			AレジスタにXレジスタが示す番地の内容をOR演算する(CFは1にする)
     case  OR:
-      a = (a | mem[ x ]) & 0xff;
-      zf = (a==0);
-      cf = 1;
+      reg_a = (reg_a | mem[ reg_x ]) & 0xff;
+      reg_zf = (reg_a==0? 1 : 0);
+      reg_cf = 1;
       break;
 
-    // ror;			AレジスタのビットをCFを含めて右回転させる
-    case  ROR:
-      tmp = a;
-      a = a >> 1;
-      if( cf == 1 ) a = a | 0x80; 
-      a &= 0xff; 
-      zf = (a==0);
-      cf = (tmp & 0x01)? 1 : 0;
+    // rorx;			Xレジスタが示す番地の内容のビットをCFを含めて右回転させる
+    case  RORX:
+      tmp = mem[ reg_x ];
+      mem[ reg_x ] = tmp >> 1;
+      if( reg_cf == 1 ) mem[ reg_x ] |= 0x80; 
+      mem[ reg_x ] &= 0xff; 
+      reg_zf = (mem[ reg_x ]==0? 1 : 0);
+      reg_cf = ((tmp&0x01)!=0)? 1 : 0;
       break;
 
-    // rol;			AレジスタのビットをCFを含めて左回転させる
-    case  ROL:
-      tmp = a;
-      a = a << 1;
-      if( cf == 1 ) a = a | 0x01; 
-      a &= 0xff; 
-      zf = (a==0);
-      cf = (tmp & 0x80)? 1 : 0;
+    // rolX;			Xレジスタが示す番地の内容のビットをCFを含めて左回転させる
+    case  ROLX:
+      tmp = mem[ reg_x ];
+      mem[ reg_x ] = tmp << 1;
+      if( reg_cf == 1 ) mem[ reg_x ] |= 0x01; 
+      mem[ reg_x ] &= 0xff; 
+      reg_zf = (mem[ reg_x ]==0? 1 : 0);
+      reg_cf = (tmp & 0x80)!=0? 1 : 0;
       break;
 
     // jmp xxxx;	xxxx番地にジャンプする
     case  JMP:
-      tmp = mem[ pc++] | (mem[ pc++ ] << 8) | (mem[pc++] << 16);
-      pc = tmp;
+      tmp = mem[ reg_pc++] | (mem[ reg_pc++ ] << 8) | (mem[reg_pc++] << 16);
+      reg_pc = tmp;
       break;
 
     // jz xxxx;		ZFが１のときxxxx番地にジャンプする
     case  JZ:
-      tmp = mem[ pc++] | (mem[ pc++ ] << 8) | (mem[pc++] << 16);
-      if( zf == 1 ) pc = tmp;
+      tmp = mem[ reg_pc++] | (mem[ reg_pc++ ] << 8) | (mem[reg_pc++] << 16);
+      if( reg_zf == 1 ) reg_pc = tmp;
       break;
 
     // jnz xxxx;	ZFが0のときxxxx番地にジャンプする
     case  JNZ:
-      tmp = mem[ pc++] | (mem[ pc++ ] << 8) | (mem[pc++] << 16);
-      if( zf == 0 ) pc = tmp;
+      tmp = mem[ reg_pc++] | (mem[ reg_pc++ ] << 8) | (mem[reg_pc++] << 16);
+      if( reg_zf == 0 ) reg_pc = tmp;
       break;
 
     // jc xxxx;		CFが１のときxxxx番地にジャンプする
     case  JC:
-      tmp = mem[ pc++] | (mem[ pc++ ] << 8) | (mem[pc++] << 16);
-      if( cf == 1 ) pc = tmp;
+      tmp = mem[ reg_pc++] | (mem[ reg_pc++ ] << 8) | (mem[reg_pc++] << 16);
+      if( reg_cf == 1 ) reg_pc = tmp;
       break;
 
     // jnc xxxx;	CFが0のときxxxx番地にジャンプする
     case  JNC:
-      tmp = mem[ pc++] | (mem[ pc++ ] << 8) | (mem[pc++] << 16);
-      if( cf == 0 ) pc = tmp;
+      tmp = mem[ reg_pc++] | (mem[ reg_pc++ ] << 8) | (mem[reg_pc++] << 16);
+      if( reg_cf == 0 ) reg_pc = tmp;
       break;
 
     // jmpx;		Xレジスタが示す番地にジャンプする
     case  JMPX:
-      pc = x;
+      reg_pc = reg_x;
       break;
 
     // ここから拡張命令
 
     // jmpy;		Yレジスタが示す番地にジャンプする
     case  JMPY:
-      pc = y;
+      reg_pc = reg_y;
       break;
 
     // lyi xxxx;	Yレジスタにxxxxの値をセットする
     case LYI:
-      y = mem[ pc++ ] | (mem[ pc++ ] << 8) | (mem[ pc++ ] << 16);
+      reg_y = mem[ reg_pc++ ] | (mem[ reg_pc++ ] << 8) | (mem[ reg_pc++ ] << 16);
       break;
 
     // ldy xxxx;	Yレジスタにxxxx番地の内容を転送する
     case LDY:
-      adr = mem[ pc++ ] | (mem[ pc++ ] << 8) | (mem[ pc++ ] << 16);
-      y = mem[ adr++ ] | (mem[ adr++ ] << 8) | (mem[ adr ] << 16);
+      adr = mem[ reg_pc++ ] | (mem[ reg_pc++ ] << 8) | (mem[ reg_pc++ ] << 16);
+      reg_y = mem[ adr++ ] | (mem[ adr++ ] << 8) | (mem[ adr ] << 16);
       break;
 
     // ady xxxx;	Yレジスタにxxxx番地の内容を加算する
     case ADY:
-      adr = mem[ pc++ ] | (mem[ pc++ ] << 8) | (mem[ pc++ ] << 16);
+      adr = mem[ reg_pc++ ] | (mem[ reg_pc++ ] << 8) | (mem[ reg_pc++ ] << 16);
       tmp = mem[ adr++ ] | (mem[ adr++ ] << 8) | (mem[ adr ] << 16);
-      y = y + tmp;
-      zf = (y==0);
-      cf = (y >= 0x1000000);
-      y &= 0xffffff; 
+      reg_y = reg_y + tmp;
+      reg_zf = (reg_y==0? 1 : 0);
+      reg_cf = (reg_y>=0x1000000? 1 : 0);
+      reg_y &= 0xffffff; 
       break;
 
     // sby xxxx;	Yレジスタからxxxx番地の内容を減算する
     case SBY:
-      adr = mem[ pc++] | (mem[ pc++ ] << 8) | (mem[pc++] << 16);
+      adr = mem[ reg_pc++] | (mem[ reg_pc++ ] << 8) | (mem[reg_pc++] << 16);
       tmp = mem[ adr++ ] | (mem[ adr++ ] << 8) | (mem[ adr ] << 16);
-      y = y - tmp;
-      zf = (y==0);
-      cf = (y < 0);
-      y &= 0xffffff; 
+      reg_y = reg_y - tmp;
+      reg_zf = (reg_y==0? 1 : 0);
+      reg_cf = (reg_y<0? 0 : 1);
+      reg_y &= 0xffffff; 
       break;
 
     // sty xxxx;	Yレジスタの内容をxxxx番地に転送する
     case STY:
-      adr = mem[ pc++] | (mem[ pc++ ] << 8) | (mem[pc++] << 16);
-      mem[ adr++ ] = (y>>0)  & 0xff;
-      mem[ adr++ ] = (y>>8)  & 0xff;
-      mem[ adr ]   = (y>>16) & 0xff;
+      adr = mem[ reg_pc++] | (mem[ reg_pc++ ] << 8) | (mem[reg_pc++] << 16);
+      mem[ adr++ ] = (reg_y>>0)  & 0xff;
+      mem[ adr++ ] = (reg_y>>8)  & 0xff;
+      mem[ adr ]   = (reg_y>>16) & 0xff;
       break;
 
     // ld_y;		AレジスタにYレジスタが示す番地の内容を転送する
     case LD_Y:
-      a = mem[ y ];
+      reg_a = mem[ reg_y ];
       break;
 
     // st_y;		Yレジスタが示す番地にAレジスタの内容を転送する
     case ST_Y:
-      mem[ y ] = a;
+      mem[ reg_y ] = reg_a;
       break;
 
     // adc_y;		AレジスタにYレジスタが示す番地の内容をキャリー付き加算する
     case ADC_Y:
-      a = a + mem[ y ] + cf;
-      cf = (a >= 0x100);
-      a &= 0xff; 
-      zf = (a==0);
+      reg_a = reg_a + mem[ reg_y ] + reg_cf;
+      reg_cf = (reg_a >= 0x100)? 1 : 0;
+      reg_a &= 0xff; 
+      reg_zf = (reg_a==0)? 1 : 0;
       break;
 
-    // sbc_y;		AレジスタからYレジスタが示す番地の内容をキャリー付き減算する
-    case SBC_Y:
-      a = a - mem[ y ] - cf;
-      cf = (a < 0);
-      a &= 0xff; 
-      zf = (a==0);
+    // sbb_y;			AレジスタからYレジスタが示す番地の内容をボロー(キャリーの反転)付き減算する
+    case  SBB_Y:
+      reg_a = reg_a - mem[ reg_y ] - 1 + reg_cf;
+      reg_cf = (reg_a<0? 0 : 1);
+      reg_a &= 0xff; 
+      reg_zf = (reg_a==0? 1 : 0);
       break;
 
     // and_y;		AレジスタにYレジスタが示す番地の内容をAND演算する(CFは0にする)
     case AND_Y:
-      a = (a & mem[ y ]) & 0xff;
-      zf = (a==0);
-      cf = 0;
+      reg_a = (reg_a & mem[ reg_y ]) & 0xff;
+      reg_zf = (reg_a==0? 1 : 0);
+      reg_cf = 0;
       break;
 
     // or_y;		AレジスタにYレジスタが示す番地の内容をOR演算する(CFは1にする)
     case OR_Y:
-      a = (a | mem[ y ]) & 0xff;
-      zf = (a==0);
-      cf = 1;
+      reg_a = (reg_a | mem[ reg_y ]) & 0xff;
+      reg_zf = (reg_a==0? 1 : 0);
+      reg_cf = 1;
+      break;
+
+    // call xxxx;	PCレジスタの内容をスタックにプッシュしてxxxx番地にジャンプする
+    case CALL:
+      tmp = mem[ reg_pc++] | (mem[ reg_pc++ ] << 8) | (mem[reg_pc++] << 16);
+      mem[ --reg_sp ] = (reg_pc>>16) & 0xff;
+      mem[ --reg_sp ] = (reg_pc>>8)  & 0xff;
+      mem[ --reg_sp ] = (reg_pc>>0)  & 0xff;
+      reg_pc = tmp;
+      break;
+
+    // ret;	スタックにプッシュされたアドレスPCレジスタに復帰する
+    case RET:
+      reg_pc = mem[ reg_sp++ ] | (mem[ reg_sp++ ] << 8) | (mem[ reg_sp++ ] << 16);
+      break;
+
+    // push a;	Aレジスタの内容をスタックにプッシュする
+    case PUSHA:
+      mem[ --reg_sp ] = reg_a;
+      break;
+
+    // push x;	Xレジスタの内容をスタックにプッシュする 
+    case PUSHX:
+      mem[ --reg_sp ] = (reg_x>>16) & 0xff;
+      mem[ --reg_sp ] = (reg_x>>8)  & 0xff;
+      mem[ --reg_sp ] = (reg_x>>0)  & 0xff;
+      break;
+
+    // pop a;	スタックからAレジスタの内容を復帰する 
+    case POPA:
+      reg_a = mem[ reg_sp++ ];
+      break;
+
+    // pop x;	スタックからXレジスタの内容を復帰する 
+    case POPX:
+      reg_x = mem[ reg_sp++ ] | (mem[ reg_sp++ ] << 8) | (mem[ reg_sp++ ] << 16);
+      break;
+
+    // txs;	Xレジスタスの内容をスタックポインタに転送する 
+    case TXS:
+      reg_sp = reg_x;
+      break;
+
+    // tsx;	スタックポインタの内容をXレジスタスに転送する 
+    case TSX:
+      reg_x = reg_sp;
+      break;
+
+    // incx;	Xレジスタを+1する
+    case INCX:
+      reg_x = (reg_x+1) & 0xffffff;
+      reg_zf = (reg_x==0? 1 : 0);
+      break;
+
+    // decx;	Xレジスタを-1する
+    case DECX:
+      reg_x = (reg_x-1) & 0xffffff;
+      reg_zf = (reg_x==0? 1 : 0);
+      break;
+
+    // incy;	Yレジスタを+1する
+    case INCY: 
+      reg_y = (reg_y+1) & 0xffffff;
+      reg_zf = (reg_y==0? 1 : 0);
+      break;
+
+    // decy;	Yレジスタを-1する
+    case DECY: 
+      reg_y = (reg_y-1) & 0xffffff;
+      reg_zf = (reg_y==0? 1 : 0);
+      break;
+
+    // rory;			Yレジスタが示す番地の内容のビットをCFを含めて右回転させる
+    case  RORY:
+      tmp = mem[ reg_y ];
+      mem[ reg_y ] = tmp >> 1;
+      if( reg_cf == 1 ) mem[ reg_y ] |= 0x80; 
+      mem[ reg_y ] &= 0xff; 
+      reg_zf = (mem[ reg_y ]==0? 1 : 0);
+      reg_cf = ((tmp&0x01)!=0)? 1 : 0;
+      break;
+
+    // roly;			Yレジスタが示す番地の内容のビットをCFを含めて左回転させる
+    case  ROLY:
+      tmp = mem[ reg_y ];
+      mem[ reg_y ] = tmp << 1;
+      if( reg_cf == 1 ) mem[ reg_y ] |= 0x01; 
+      mem[ reg_y ] &= 0xff; 
+      reg_zf = (mem[ reg_y ]==0? 1 : 0);
+      reg_cf = (tmp & 0x80)!=0? 1 : 0;
       break;
 
     }
-    print_regs();
+
+// I/O同期
+io_sync();
+
+}
+
+
+
+// 実行スレッド
+void* mainThread( void* pParam ){
+
+printf("enter main thread\r\n");
+
+  reg_pc = 0x070000;
+  reg_x = 0;
+  reg_y = 0;
+  reg_a = 0;
+  reg_cf = 0;
+  reg_zf = 0;
+  mem[0] = (int)HLT;
+
+  // メインループ
+  while( !is_break ){
+    exec_one_cycle();
   }
-  printf("HALT.\n");
+}
+
+
+// メイン
+void main( int argc, char** argv ){
+  pthread_t ThreadMain;
+
+printf("Card8vm Emulator ver 0.1\n");
+printf("If you want to break, please type \'\\\' key.\n");
+
+  // パラメータがあるときはプログラムファイル名とみなしてロードする
+  if( argc > 1 ) load_prog( argv[1] );
+
+  is_break = 0;
+  pthread_create( &ThreadMain,     NULL, mainThread,     NULL );
+  while( !is_break ){
+    int c = getch();
+    if( c == (int)'\r' ) c =(int)'\n';
+    if( c == '\\' ) is_break = 1;
+    KeyCode = c;
+  }
+  pthread_join( ThreadMain,     NULL );
+
 }
